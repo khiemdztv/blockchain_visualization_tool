@@ -1,0 +1,117 @@
+Hệ thống được thiết kế theo mô hình phân tầng (layered architecture) để đảm bảo tính modul hóa, dễ mở rộng và tập trung vào mục tiêu giáo dục. Kiến trúc này hỗ trợ trực quan hóa tương tác blockchain, giúp học sinh/sinh viên hiểu rõ khái niệm như hashing, proof-of-work và tính bất biến của chuỗi khối. Dưới đây là sơ đồ ASCII minh họa cấu trúc:
+text+---------------------------+
+| User                      |
+| (Học sinh / Sinh viên /   |
+|  Giáo viên)               |
+| Browser / Web App         |
++---------------------------+
+          ↓ (HTTPS / WebSocket)
++---------------------------+
+| Visualization Layer       | ← React + Vite + TypeScript
+| - Interactive UI          |
+| - Real-time Animation     |
+| - D3.js / Three.js        |
++---------------------------+
+          ↓ (REST API + WebSocket)
++---------------------------+
+| API Layer                 | ← Node.js (Express) hoặc Spring Boot (Java)
+| - Endpoints               |
+| - Validation              |
+| - Real-time updates       |
++---------------------------+
+          ↓ (Internal calls / gRPC / HTTP)
++---------------------------+
+| Blockchain Core           | ← Java (JDK 17+)
+| - Block & Chain logic     |
+| - SHA-256 hashing         |
+| - PoW mining              |
+| - Chain validation        |
++---------------------------+
+          ↓ (File / In-memory)
++---------------------------+
+| Data Storage              | ← In-memory (cho demo) hoặc JSON file / H2 DB
++---------------------------+
+
+Parallel / Separate:
++---------------------------+
+| Research & Evaluation     | ← Python (Jupyter + pandas + matplotlib)
+| - Data collection         |
+| - Statistical analysis    |
+| - Visualization results   |
++---------------------------+
+3.1.1 Luồng Dữ liệu Chính (Quy trình Hoạt động)
+Quy trình hoạt động của hệ thống được thiết kế để hỗ trợ trải nghiệm học tập chủ động, với luồng dữ liệu khép kín từ người dùng đến phân tích kết quả. Dưới đây là quy trình chi tiết, được minh họa bằng các bước tuần tự:
+
+Người dùng tương tác: Học sinh/sinh viên/giáo viên truy cập qua browser (Web App). Họ nhập dữ liệu (ví dụ: transaction dummy như "Học sinh A đạt điểm 10"), chỉnh sửa block, hoặc click nút "Mine" để bắt đầu mining. Input này được gửi từ Visualization Layer đến API Layer qua HTTPS hoặc WebSocket cho real-time.
+Xử lý yêu cầu tại API Layer: API nhận request (ví dụ: POST /addBlock hoặc /simulateMining), kiểm tra validation (dữ liệu hợp lệ, difficulty level), rồi gọi internal đến Blockchain Core. Nếu cần real-time (như mining), sử dụng WebSocket để stream updates.
+Tính toán tại Blockchain Core: Core xử lý logic chính:
+Tạo block mới với fields (index, timestamp, data, previousHash, nonce).
+Tính SHA-256 hash.
+Chạy PoW mining (tìm nonce với difficulty, giới hạn thời gian để tránh treo).
+Kiểm tra chain validation (previousHash khớp, hash valid).
+Kết quả (hash mới, chain status) được trả về API.
+
+Trả kết quả và cập nhật Visualization Layer: API đẩy dữ liệu ngược lên frontend qua REST response hoặc WebSocket push. Visualization Layer nhận và animate realtime:
+Cập nhật chain graph (thêm node mới, nối previousHash).
+Animate avalanche effect nếu data thay đổi (highlight bit flip).
+Hiển thị feedback (màu xanh nếu valid, màu đỏ + giải thích nếu invalid, kèm confetti cho thành công).
+
+Thu thập dữ liệu hành vi và phân tích: Trong quá trình tương tác, hệ thống log dữ liệu (thời gian mining, số lần thử tamper, câu trả lời quiz) vào Data Storage (JSON hoặc H2 DB). Dữ liệu này được export định kỳ (CSV) sang Research Module. Python xử lý:
+Phân tích thống kê (paired t-test cho pre/post-test).
+Vẽ chart (e.g., bar plot improvement learning outcomes).
+Tạo báo cáo (Jupyter → PDF) để hỗ trợ bài nghiên cứu.
+
+
+Quy trình này đảm bảo tính tương tác cao, feedback tức thì và dữ liệu thực nghiệm đáng tin cậy, tạo điểm khác biệt so với các công cụ giáo dục blockchain hiện có (chủ yếu không có empirical evaluation).
+Hình ảnh minh họa dưới đây cho thấy một ví dụ về luồng blockchain mining, tương tự quy trình PoW trong hệ thống của bạn (tìm nonce → hash valid).
+Một ví dụ khác về quy trình SHA-256 hashing, giúp visualize step-by-step trong Visualization Layer.
+3.2 Core Functional Modules (Chi tiết)
+Các module được triển khai để hỗ trợ simulation, visualization và interaction, với trọng tâm giáo dục (dạy khái niệm qua trải nghiệm thực tế).
+Module 1 – Blockchain Simulation (Java Core)
+Nhiệm vụ chính: Tạo và quản lý chuỗi khối, tính toán cryptographic hashing, mô phỏng cơ chế đồng thuận đơn giản.
+Các thành phần cụ thể:
+
+Block.java:
+Fields: index (int), timestamp (long), data (String/Transaction), previousHash (String), nonce (int), hash (String).
+Method: calculateHash() → Sử dụng SHA-256 để concat fields và tính hash.
+
+Blockchain.java:
+List<Block> chain.
+addBlock(Block block) → Thêm block sau khi mine.
+isChainValid() → Iterate qua chain, kiểm tra previousHash khớp và hash hợp lệ.
+
+ProofOfWork.java:
+mineBlock(int difficulty) → Vòng lặp tìm nonce sao cho hash bắt đầu bằng số 0 đủ difficulty (e.g., "0000" cho difficulty=4). Giới hạn max attempts (e.g., 1 triệu) để tránh treo, phù hợp giáo dục.
+
+MerkleTree.java (nâng cao): Xây dựng tree từ list transactions → Tính hash lá → root hash lưu vào block header.
+
+Công cụ / Thư viện: java.security.MessageDigest (SHA-256), java.util collections. (Tùy chọn) BouncyCastle nếu cần ECDSA sau này.
+Module 2 – Visualization Engine (Frontend)
+Nhiệm vụ chính: Hiển thị trực quan sinh động các khái niệm blockchain, tạo animation giúp học sinh hiểu ngay lập tức.
+Các thành phần cụ thể:
+
+Chain View (D3.js force-directed graph): Mỗi block là node (hiển thị index, hash ngắn, data). Mũi tên thể hiện previousHash. Khi add block mới → node mới xuất hiện và nối vào chain với animation mượt.
+Avalanche Effect Animation: Input box → Thay đổi 1 ký tự → Hai hash (trước/sau) hiển thị binary/hex. Bit khác biệt highlight màu đỏ + animation flip (sử dụng SVG trong D3.js).
+Hash Process Step-by-step: Animate 64 rounds của SHA-256 (đơn giản hóa: show input → padding → compression → output, với pause/resume cho học tập).
+Merkle Tree View (nâng cao): Tree layout (D3.js tree hoặc react-organizational-chart). Click vào leaf (transaction) → highlight đường lên root.
+3D View (tùy chọn – Three.js): Blocks là cube, chain là đường xoắn ốc 3D, rotate để khám phá.
+
+Công cụ / Thư viện: React + TypeScript, D3.js (forceSimulation cho chain, tree cho Merkle), Three.js / @react-three/fiber (nếu làm 3D), Framer Motion hoặc GSAP (animation mượt).
+Module 3 – Educational Interaction
+Nhiệm vụ chính: Tạo trải nghiệm học tập chủ động, cung cấp feedback tức thì.
+Các tính năng cụ thể:
+
+Scenario-based tasks: “Thay đổi điểm số trong transcript → xem chain có invalid không” hoặc “Thử mining với difficulty 4 → xem thời gian”.
+Immediate Feedback: Chain valid → màu xanh + confetti. Chain invalid → màu đỏ + giải thích “previousHash không khớp” hoặc “hash không đạt target” (bằng tiếng Việt + ẩn dụ).
+Guided Tutorial: Step-by-step wizard: Hash → Block → Chain → Tamper → Detect.
+Quiz & Challenge: Multiple choice hoặc điền hash ngắn. Lưu kết quả vào localStorage hoặc gửi về backend, tính score realtime.
+
+Module 4 – Research & Evaluation Module (Python-based)
+Nhiệm vụ chính: Thu thập và phân tích dữ liệu thực nghiệm để chứng minh hiệu quả giáo dục.
+Các thành phần cụ thể:
+
+Data Collection: Pre-test / Post-test (Google Forms → export CSV). Log hành vi trong tool (số lần thử mining, thời gian hoàn thành task, câu trả lời quiz). Khảo sát SUS (System Usability Scale) + câu hỏi về mức độ hiểu khái niệm.
+Analysis Pipeline: pandas: đọc và làm sạch dữ liệu. scipy.stats: paired t-test (pre vs post score). matplotlib / seaborn: vẽ boxplot, bar chart improvement. (Tùy chọn) statsmodels: phân tích hồi quy nếu có biến điều khiển.
+Output: Báo cáo tự động (Jupyter → PDF/HTML). Biểu đồ dùng trong bài nghiên cứu: “Tỷ lệ hiểu avalanche effect tăng 45% sau khi dùng tool”.
+
+Công cụ / Thư viện: Jupyter Notebook, pandas, numpy, matplotlib, seaborn, scipy, statsmodels, pingouin (dễ dùng hơn cho t-test, effect size).
