@@ -21,7 +21,7 @@ text+---------------------------+
 +---------------------------+
           ↓ (Internal calls / gRPC / HTTP)
 +---------------------------+
-| Blockchain Core           | ← Java (JDK 17+)
+| Blockchain Core           | ← Java 
 | - Block & Chain logic     |
 | - SHA-256 hashing         |
 | - PoW mining              |
