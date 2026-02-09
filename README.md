@@ -1,74 +1,24 @@
-# blockchain_visualization_tool
-Developing a Blockchain Activity Visualization Tool for Educational Use
-Tóm tắt quy trình: Thiết kế Block → Tạo Hash → Liên kết Chuỗi → Trực quan hóa → Tương tác → Kiểm tra tính toàn vẹn.
-Xây dựng một blockchain thật tức là một mạng lưới blockchain hoạt động đầy đủ, không chỉ là lý thuyết hay mô phỏng đơn giản mà là một quá trình kỹ thuật phức tạp đòi hỏi kiến thức sâu về mật mã, mạng máy tính và cấu trúc dữ liệu.
+src/blockchainvtk/Main.java
 
-Dưới đây là lộ trình các bước cốt lõi để xây dựng một blockchain:
+Là chương trình demo chính, điều khiển luồng chạy: chọn chế độ hash, tạo blockchain mẫu (genesis + vài block), hiển thị chuỗi, giả mạo dữ liệu và kiểm tra tính toàn vẹn, đồng thời demo “avalanche effect”. Dùng để chạy demo trực tiếp khi trình bày.
+src/blockchainvtk/Block.java
 
-1. Xác định Loại hình & Kiến trúc (Design Phase)
-Trước khi viết dòng code đầu tiên, bạn cần xác định rõ mục tiêu:
+Lớp biểu diễn một block thực tế (index, timestamp, data, previousHash, hash) và có phương thức calculateHash() để tính hash của block theo chiến lược hash được chọn. Đây là đối tượng dữ liệu chính để trực quan hóa cấu trúc block.
+src/blockchainvtk/AbstractBlock.java
 
-Loại Blockchain:
+Lớp trừu tượng định nghĩa các trường chung và getter/setter cho block; bắt buộc các lớp con phải triển khai calculateHash(). Giúp tách phần chung và dễ mở rộng.
+src/blockchainvtk/Blockchain.java
 
-Public (Công khai): Bất kỳ ai cũng có thể tham gia (như Bitcoin, Ethereum).
+Quản lý danh sách block (chain): tạo genesis block, thêm block mới, in chuỗi, và kiểm tra tính toàn vẹn (isValid). Module này là “mô hình” chuỗi dùng cho các demo về bảo mật và tamper-detection.
+src/blockchainvtk/HashStrategy.java
 
-Private/Permissioned (Riêng tư): Chỉ các bên được cấp quyền mới được tham gia (thường dùng cho doanh nghiệp, chuỗi cung ứng).
+Interface cho chiến lược hash, cho phép chuyển đổi dễ dàng giữa các thuật toán hash (ví dụ SimpleHash và SHA-256). Dùng để so sánh hành vi của hàm băm khác nhau trong demo.
+src/blockchainvtk/SimpleHash.java
 
-Cơ chế Đồng thuận (Consensus Mechanism): Làm sao để các node đồng ý với nhau về trạng thái của chuỗi?
+Triển khai một hàm băm rất đơn giản (16 ký tự hex) — nhanh nhưng không an toàn, chỉ dùng cho mục đích giáo dục/so sánh. Dùng để minh họa ý nghĩa của hash và avalanche effect trong môi trường không phức tạp.
+src/blockchainvtk/SHA256Hash.java
 
-Proof of Work (PoW): Đào coin (cần nhiều năng lượng).
+Triển khai SHA-256 (dùng MessageDigest). Dùng để so sánh với SimpleHash và cho thấy hành vi/độ an toàn của hàm băm công nghiệp.
+src/blockchainvtk/HashComparison.java
 
-Proof of Stake (PoS): Dựa trên cổ phần nắm giữ.
-
-Proof of Authority (PoA): Dựa trên uy tín (phù hợp cho private chain).
-
-2. Xây dựng Core (Lớp lõi)
-Đây là phần quan trọng nhất, nơi xử lý dữ liệu và logic của chuỗi.
-
-Cấu trúc dữ liệu (Data Structure):
-
-Block: Thiết kế header (timestamp, previous hash, nonce) và body (dữ liệu giao dịch).
-
-Chain: Logic để liên kết các block bằng mã băm (hash).
-
-Mật mã học (Cryptography):
-
-Hàm băm (Hashing): Chọn thuật toán (thường là SHA-256 hoặc Keccak-256) để tạo định danh duy nhất cho block.
-
-Chữ ký số (Digital Signature): Dùng cặp khóa Public/Private Key (thường là Elliptic Curve - ECDSA) để ký và xác thực giao dịch.
-
-Quản lý trạng thái (State Management):
-
-Lưu trữ số dư (Account model như Ethereum) hoặc trạng thái giao dịch chưa chi tiêu (UTXO model như Bitcoin).
-
-3. Xây dựng Mạng lưới P2P (Networking)
-Blockchain "thật" phải chạy trên nhiều máy tính (nodes) khác nhau.
-
-Discovery: Các node làm sao tìm thấy nhau? (Sử dụng seed nodes hoặc DHT).
-
-Propagation: Cơ chế lan truyền block và giao dịch mới cho toàn mạng (Gossip protocol).
-
-Synchronization: Khi một node mới tham gia, nó phải tải và đồng bộ hóa toàn bộ lịch sử chuỗi từ các node khác.
-
-4. Triển khai Cơ chế Đồng thuận (Consensus Implementation)
-Đây là bước biến các máy tính rời rạc thành một hệ thống thống nhất.
-
-Lập trình logic để xác định ai được quyền tạo block tiếp theo.
-
-Xử lý các tình huống xung đột (forking): Khi có 2 block được tạo ra cùng lúc, chuỗi nào sẽ được chọn (thường là "Longest Chain Rule").
-
-5. API & Giao diện (Interface Layer)
-Để người dùng hoặc ứng dụng khác tương tác được với blockchain của bạn:
-
-RPC/REST API: Tạo các cổng để gửi giao dịch, kiểm tra số dư, xem block.
-
-CLI (Command Line Interface): Công cụ dòng lệnh để khởi chạy node, tạo ví.
-
-Wallet (Ví): Phần mềm để người dùng quản lý khóa và ký giao dịch.
-
-6. Testing & Security
-Unit Test: Kiểm tra từng hàm mật mã, tạo block.
-
-Integration Test: Chạy thử một mạng lưới nhỏ (vài nodes) để xem chúng có đồng bộ không.
-
-Audit: Rà soát lỗ hổng bảo mật (tấn công 51%, double-spending).
+Công cụ tập trung so sánh hai chiến lược hash: in ra hash, độ dài, tốc độ/bảo mật, và demo avalanche effect cho từng chiến lược. Hữu ích khi trình bày khác biệt giữa hash “giả lập” và hash thực tế.
