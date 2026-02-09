@@ -14,7 +14,7 @@ Quản lý danh sách block (chain): tạo genesis block, thêm block mới, in 
 Interface cho chiến lược hash, cho phép chuyển đổi dễ dàng giữa các thuật toán hash (ví dụ SimpleHash và SHA-256). Dùng để so sánh hành vi của hàm băm khác nhau trong demo.
 
 6.src/blockchainvtk/SimpleHash.java
-Triển khai một hàm băm rất đơn giản (16 ký tự hex) — nhanh nhưng không an toàn, chỉ dùng cho mục đích giáo dục/so sánh. Dùng để minh họa ý nghĩa của hash và avalanche effect trong môi trường không phức tạp.
+Triển khai một hàm băm rất đơn giản (16 ký tự hex) — nhanh nhưng không an toàn, chỉ dùng cho mục đích giáo dục/so sánh. Dùng để minh họa ý nghĩa của hash và avalanche effect trong môi trường không phức tạp. Hàm hash này không phải là thuật toán chuẩn như SHA-256 mà là một hàm hash đơn giản được xây dựng dựa trên nguyên lý polynomial rolling hash thường dùng trong string hashing. Ý tưởng lấy từ cách hoạt động của Java String.hashCode() và các tài liệu về string hashing(https://cp-algorithms.com/string/string-hashing.html) trong cấu trúc dữ liệu, dùng để minh họa cơ chế tạo hash và hiệu ứng avalanche trong blockchain ở mức giáo dục.
 
 7.src/blockchainvtk/SHA256Hash.java
 Triển khai SHA-256 (dùng MessageDigest). Dùng để so sánh với SimpleHash và cho thấy hành vi/độ an toàn của hàm băm công nghiệp.
