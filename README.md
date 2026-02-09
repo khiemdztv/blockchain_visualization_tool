@@ -3,7 +3,7 @@ Developing a Blockchain Activity Visualization Tool for Educational Use
 Tóm tắt quy trình: Thiết kế Block → Tạo Hash → Liên kết Chuỗi → Trực quan hóa → Tương tác → Kiểm tra tính toàn vẹn.
 Xây dựng một blockchain thật tức là một mạng lưới blockchain hoạt động đầy đủ, không chỉ là lý thuyết hay mô phỏng đơn giản mà là một quá trình kỹ thuật phức tạp đòi hỏi kiến thức sâu về mật mã, mạng máy tính và cấu trúc dữ liệu.
 
-Dưới đây là lộ trình các bước cốt lõi để xây dựng một blockchain từ con số 0 :
+Dưới đây là lộ trình các bước cốt lõi để xây dựng một blockchain:
 
 1. Xác định Loại hình & Kiến trúc (Design Phase)
 Trước khi viết dòng code đầu tiên, bạn cần xác định rõ mục tiêu:
