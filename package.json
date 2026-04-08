@@ -1,0 +1,32 @@
+{
+  "name": "blockedupro",
+  "version": "1.0.0",
+  "description": "BlockEdu Pro - Full-Stack Blockchain Visualizer",
+  "main": "server.js",
+  "scripts": {
+    "dev": "concurrently \"node server.js\" \"vite\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node server.js",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "blockchain",
+    "education"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-zoom-pan-pinch": "^3.7.0",
+    "vite": "^5.2.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.27",
+    "concurrently": "^9.2.1",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^3.4.19"
+  }
+}

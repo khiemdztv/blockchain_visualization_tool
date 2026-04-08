@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "open-browser",
+            "type": "shell",
+            "command": "Start-Process 'http://localhost:3001/index.html'",
+            "windows": {
+                "command": "Start-Process 'http://localhost:3001/index.html'"
+            },
+            "presentation": {
+                "reveal": "never"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "start-server",
+            "type": "shell",
+            "command": "node server.js",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
