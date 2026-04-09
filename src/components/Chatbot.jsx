@@ -26,14 +26,16 @@ const CHAT_I18N = {
     clear: 'Xoá chat',
     error: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.',
     errorKey: 'Chưa cấu hình OpenAI API key. Vui lòng thêm OPENAI_API_KEY vào file .env.',
-    welcome: 'Xin chào! 👋 Tôi là AI Assistant của BlockEdu Pro.\nBạn có thể hỏi tôi về:\n• Blockchain, Hash, Merkle Tree\n• Hướng dẫn sử dụng web app\n• Proof of Work, Mining\n• Bất cứ điều gì bạn thắc mắc!',
+    welcome: 'Xin chào! 👋 Tôi là AI Assistant của BlockEdu Pro.\nTôi được học từ 14 tài liệu nghiên cứu về Blockchain!\nBạn có thể hỏi tôi về:\n• Bitcoin, Blockchain, Hash, Merkle Tree\n• Mật mã học, RSA, SHA-256\n• Timestamping, Proof of Work\n• Bất cứ điều gì bạn thắc mắc!',
     suggestions: [
       '⛓ Blockchain là gì?',
       '🔒 Hash SHA-256 hoạt động ra sao?',
       '⛏ Mining là gì?',
       '🌳 Merkle Tree dùng để làm gì?',
     ],
-    poweredBy: 'Powered by GPT-4o-mini',
+    poweredBy: 'RAG · GPT-4o-mini · 14 tài liệu nghiên cứu',
+    sources: 'Nguồn tham khảo',
+    page: 'tr.',
   },
   en: {
     title: 'AI Assistant',
@@ -44,14 +46,16 @@ const CHAT_I18N = {
     clear: 'Clear chat',
     error: 'Sorry, something went wrong. Please try again.',
     errorKey: 'OpenAI API key not configured. Please add OPENAI_API_KEY to your .env file.',
-    welcome: 'Hello! 👋 I am BlockEdu Pro\'s AI Assistant.\nFeel free to ask me about:\n• Blockchain, Hash, Merkle Tree\n• How to use this web app\n• Proof of Work, Mining\n• Anything you\'re curious about!',
+    welcome: 'Hello! 👋 I am BlockEdu Pro\'s AI Assistant.\nI have studied 14 research documents on Blockchain!\nFeel free to ask me about:\n• Bitcoin, Blockchain, Hash, Merkle Tree\n• Cryptography, RSA, SHA-256\n• Timestamping, Proof of Work\n• Anything you\'re curious about!',
     suggestions: [
       '⛓ What is Blockchain?',
       '🔒 How does SHA-256 work?',
       '⛏ What is Mining?',
       '🌳 What is a Merkle Tree?',
     ],
-    poweredBy: 'Powered by GPT-4o-mini',
+    poweredBy: 'RAG · GPT-4o-mini · 14 Research Papers',
+    sources: 'References',
+    page: 'p.',
   },
 };
 
@@ -125,20 +129,49 @@ function TypingIndicator({ label }) {
 }
 
 // ─── Message bubble ────────────────────────────────────────────
-function MessageBubble({ msg }) {
+function MessageBubble({ msg, lang }) {
   const isUser = msg.role === 'user';
-  const lines = (msg.content || '').split('\n');
+  
+  const processText = (text) => {
+    // Xóa các ký tự LaTeX toán học gây lỗi hiển thị
+    let cleanText = text.replace(/\\\\?\(/g, '').replace(/\\\\?\)/g, '');
+    cleanText = cleanText.replace(/\\\\?\[/g, '\n').replace(/\\\\?\]/g, '\n');
+    
+    const lines = cleanText.split('\n');
+    return lines.map((line, i) => {
+      // Xử lý Markdown Header (### Heading)
+      let isHeader = false;
+      let parsedLine = line;
+      if (/^#{1,6}\s+(.*)/.test(line)) {
+        isHeader = true;
+        parsedLine = line.replace(/^#{1,6}\s+/, '');
+      }
+
+      // Xử lý in đậm (**text**)
+      const boldParts = parsedLine.split(/(\*\*.*?\*\*)/g);
+      const lineContent = boldParts.map((part, j) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={j}>{part.slice(2, -2)}</strong>;
+        }
+        return part;
+      });
+
+      return (
+        <React.Fragment key={i}>
+          {isHeader ? <strong style={{fontSize: '110%', color: 'var(--cyan)', display: 'block', marginTop: '8px'}}>{lineContent}</strong> : lineContent}
+          {i < lines.length - 1 && <br />}
+        </React.Fragment>
+      );
+    });
+  };
 
   return (
     <div className={`cb-msg ${isUser ? 'cb-msg-user' : 'cb-msg-bot'}`}>
       {!isUser && <div className="cb-avatar"><BotIcon /></div>}
-      <div className={`cb-bubble ${isUser ? 'cb-bubble-user' : 'cb-bubble-bot'}`}>
-        {lines.map((line, i) => (
-          <React.Fragment key={i}>
-            {line}
-            {i < lines.length - 1 && <br />}
-          </React.Fragment>
-        ))}
+      <div className="cb-bubble-wrapper">
+        <div className={`cb-bubble ${isUser ? 'cb-bubble-user' : 'cb-bubble-bot'}`}>
+          {processText(msg.content || '')}
+        </div>
       </div>
     </div>
   );
@@ -218,6 +251,7 @@ export default function Chatbot({ lang = 'vi', currentPage = 'home' }) {
         id: Date.now() + 1,
         role: 'bot',
         content: data.reply || t.error,
+        sources: data.sources || [],
         ts: Date.now(),
       };
       setMessages(prev => [...prev, botMsg]);
@@ -328,7 +362,7 @@ export default function Chatbot({ lang = 'vi', currentPage = 'home' }) {
         {/* Messages */}
         <div className="cb-messages" id="cb-messages-container">
           {messages.map(msg => (
-            <MessageBubble key={msg.id} msg={msg} />
+            <MessageBubble key={msg.id} msg={msg} lang={lang} />
           ))}
           {loading && <TypingIndicator label={t.typing} />}
           <div ref={messagesEndRef} />

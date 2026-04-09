@@ -602,6 +602,54 @@ textarea.inp { resize: vertical; min-height: 72px; line-height: 1.7; }
   .cb-box { right: 8px; bottom: 90px; width: calc(100vw - 16px); height: 70vh; border-radius: 16px; }
 }
 
+/* ── RAG Citation Badges ── */
+.cb-bubble-wrapper {
+  display: flex; flex-direction: column; gap: 6px;
+  max-width: 85%;
+}
+.cb-msg-user .cb-bubble-wrapper { align-items: flex-end; }
+
+.cb-sources {
+  animation: cb-msg-in 0.3s ease 0.1s both;
+}
+.cb-sources-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  margin-bottom: 5px; font-family: var(--sans);
+}
+.cb-sources-list {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.cb-source-chip {
+  display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+  padding: 6px 10px; border-radius: 8px;
+  background: rgba(124,58,237,0.07);
+  border: 1px solid rgba(124,58,237,0.18);
+  transition: all 0.2s; cursor: default;
+}
+.cb-source-chip:hover {
+  background: rgba(124,58,237,0.13);
+  border-color: rgba(124,58,237,0.35);
+  transform: translateX(2px);
+}
+[data-theme="light"] .cb-source-chip {
+  background: rgba(124,58,237,0.05);
+  border-color: rgba(124,58,237,0.15);
+}
+.cb-source-icon { font-size: 11px; flex-shrink: 0; }
+.cb-source-title {
+  font-size: 11px; font-family: var(--sans); color: var(--text2);
+  line-height: 1.4; font-weight: 500;
+}
+[data-theme="light"] .cb-source-title { color: #334155; }
+.cb-source-page {
+  font-size: 10px; font-weight: 700; color: var(--cyan);
+  font-family: var(--mono); white-space: nowrap; flex-shrink: 0;
+  background: rgba(34,211,238,0.1); padding: 1px 6px;
+  border-radius: 4px; border: 1px solid rgba(34,211,238,0.2);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    RSA MODULE — Asymmetric Encryption Visualizer
    ═══════════════════════════════════════════════════════════════ */

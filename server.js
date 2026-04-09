@@ -18,6 +18,16 @@ const path_m = require('path');
 const PORT = process.env.PORT || 3001;
 
 // ═══════════════════════════════════════════════════════════════
+// RAG ENGINE — load on startup
+// ═══════════════════════════════════════════════════════════════
+const ragEngine = require('./rag_engine');
+ragEngine.init().then(() => {
+  console.log('[BlockEdu] RAG engine initialized.');
+}).catch(e => {
+  console.warn('[BlockEdu] RAG engine init failed (chatbot will use base mode):', e.message);
+});
+
+// ═══════════════════════════════════════════════════════════════
 // READ .env FILE (pure Node.js — no dotenv package needed)
 // ═══════════════════════════════════════════════════════════════
 try {
@@ -378,7 +388,7 @@ const server = http.createServer(async (req, res) => {
       });
 
     // ── POST /api/chat ────────────────────────────────────────
-    // AI chatbot endpoint — proxies to OpenAI GPT-4o-mini
+    // AI chatbot endpoint — RAG-powered, proxies to OpenAI GPT-4o-mini
     } else if (path === '/api/chat' && req.method === 'POST') {
       const body = await readBody(req);
       const { message = '', context = {} } = body;
@@ -395,26 +405,79 @@ const server = http.createServer(async (req, res) => {
       const lang = (context.lang || 'vi').toLowerCase();
       const currentPage = context.current_page || 'home';
       const isVi = lang === 'vi';
-      const systemPrompt = isVi
-        ? `Bạn là AI Assistant của BlockEdu Pro — ứng dụng web giáo dục Blockchain cho sinh viên.
+
+      // ── RAG: Retrieve relevant chunks ──────────────────────────
+      let ragContext = '';
+      let sources = [];
+      try {
+        const relevantChunks = await ragEngine.searchSimilar(message.trim(), 20);
+        if (relevantChunks.length > 0) {
+          ragContext = ragEngine.buildRAGContext(relevantChunks, lang);
+          sources = ragEngine.buildSourcesList(relevantChunks);
+        }
+      } catch (ragErr) {
+        console.warn('[RAG] Search failed, using base mode:', ragErr.message);
+      }
+
+      // Generate the list of all available books
+      const allBooks = Object.values(require('./rag_titles').DOC_TITLES).join('\n- ');
+
+      // ── Build system prompt with RAG context ───────────────────
+      let systemPrompt;
+      if (ragContext) {
+        systemPrompt = isVi
+          ? `Bạn là AI Assistant của BlockEdu Pro — ứng dụng giáo dục Blockchain.
+Trang hiện tại: "${currentPage}"
+Bạn đã được huấn luyện sẵn trên 14 bộ tài liệu sau: 
+- ${allBooks}
+
+Dựa trên truy vấn hiện tại, hệ thống đã trích xuất các đoạn văn bản (TÀI LIỆU) liên quan nhất như sau:
+
+${ragContext}
+
+QUY TẮC QUAN TRỌNG:
+1. Trả lời Tiếng Việt, thân thiện, rõ ràng và có chiều sâu học thuật.
+2. LUÔN trích dẫn nguồn ngay dước đoạn văn dựa theo đúng format ở phần TÀI LIỆU (KHÔNG DÙNG "Nguồn 1", "Nguồn 2", mà phải dùng trực tiếp Tên sách). Ví dụ: [Tên Sách, tr. X]
+3. TUYỆT ĐỐI KHÔNG dùng định dạng toán học LaTeX (như \\(, \\), \\[, \\]). Dùng text bình thường và các ký hiệu thông dụng (ví dụ: c = m^e mod n).
+4. Nếu thông tin không có trong tài liệu trên, hãy nói rõ: "Theo kiến thức chung..."
+5. Ưu tiên thông tin từ tài liệu hơn kiến thức nền.`
+          : `You are BlockEdu Pro's AI Assistant — a blockchain education web app.
+Current page: "${currentPage}"
+You have been trained on the following 14 documents:
+- ${allBooks}
+
+Based on the current query, the system has extracted the following most relevant DOCUMENTS:
+
+${ragContext}
+
+IMPORTANT RULES:
+1. Reply in English, friendly and academically precise.
+2. ALWAYS cite sources in your answer using the exact format provided in DOCUMENTS (DO NOT use "Source 1", "Source 2", but use the Book Title directly). Example: [Book Title, p. X]
+3. DO NOT use LaTeX math formatting like \\( \\) or \\[ \\]. Use plain text and standard symbols (e.g. c = m^e mod n).
+4. If information is not in the documents above, clearly state: "Based on general knowledge..."
+5. Prioritize document information over general knowledge.`;
+      } else {
+        systemPrompt = isVi
+          ? `Bạn là AI Assistant của BlockEdu Pro — ứng dụng web giáo dục Blockchain cho sinh viên.
 Trang hiện tại: "${currentPage}"
 Trả lời Tiếng Việt, thân thiện, ngắn gọn. Tập trung vào blockchain, mật mã học, hướng dẫn app.`
-        : `You are BlockEdu Pro's AI Assistant — a blockchain education web app.
+          : `You are BlockEdu Pro's AI Assistant — a blockchain education web app.
 Current page: "${currentPage}"
 Reply in English, friendly and concise. Focus on blockchain, cryptography, app guidance.`;
+      }
 
       const history = Array.isArray(context.history) ? context.history : [];
       const oaiMessages = [
         { role: 'system', content: systemPrompt },
-        ...history.slice(-8),
+        ...history.slice(-6),
         { role: 'user', content: message.trim() },
       ];
 
       const payload = JSON.stringify({
         model: 'gpt-4o-mini',
         messages: oaiMessages,
-        max_tokens: 600,
-        temperature: 0.7,
+        max_tokens: 800,
+        temperature: 0.5,
       });
 
       const reply = await new Promise((resolve, reject) => {
@@ -438,13 +501,13 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
             } catch(e) { reject(new Error('Parse error: ' + data.slice(0,100))); }
           });
         });
-        req2.setTimeout(20000, () => { req2.destroy(); reject(new Error('Timeout')); });
+        req2.setTimeout(25000, () => { req2.destroy(); reject(new Error('Timeout')); });
         req2.on('error', reject);
         req2.write(payload);
         req2.end();
       });
 
-      json(res, { reply });
+      json(res, { reply, sources });
 
     // ── GET /health ───────────────────────────────────────────
     } else if (path === '/health') {
