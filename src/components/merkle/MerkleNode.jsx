@@ -8,6 +8,9 @@ import { LANG } from '../../data/lang.js';
  * Uses CSS variables exclusively for colors so Light/Dark mode
  * is automatic. Node accent colors (purple/blue/cyan) are explicit
  * brand colors that work on both backgrounds.
+ *
+ * Enhanced: Detail panel now shows a visual "hash combining" diagram
+ * that clearly illustrates how SHA-256(Left + Right) produces this node.
  */
 
 // ── Per-type accent palette (works on any background) ─────────────────────
@@ -95,7 +98,7 @@ function DetailPanel({ anchorRef, onClose, children }) {
         position: 'absolute',
         top: pos.top,
         left: pos.left,
-        width: 300,
+        width: 340,
         zIndex: 9999,
         opacity: mounted ? 1 : 0,
         transform: mounted ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.97)',
@@ -106,6 +109,287 @@ function DetailPanel({ anchorRef, onClose, children }) {
       {children}
     </div>,
     document.body
+  );
+}
+
+// ── Visual Hash Combining Diagram ──────────────────────────────────────────
+function HashCombineDiagram({ leftHash, rightHash, resultHash, isDuplicate, lang, accentColor }) {
+  const t = LANG[lang].merkle;
+  const [animStep, setAnimStep] = useState(0);
+
+  useEffect(() => {
+    const timers = [];
+    timers.push(setTimeout(() => setAnimStep(1), 200));
+    timers.push(setTimeout(() => setAnimStep(2), 600));
+    timers.push(setTimeout(() => setAnimStep(3), 1000));
+    return () => timers.forEach(clearTimeout);
+  }, [leftHash, rightHash]);
+
+  const shortL = leftHash ? leftHash.slice(0, 12) + '…' : '?';
+  const shortR = rightHash ? rightHash.slice(0, 12) + '…' : shortL;
+  const shortResult = resultHash ? resultHash.slice(0, 16) + '…' : '?';
+
+  return (
+    <div style={{
+      background: 'var(--bg3)',
+      borderRadius: 12,
+      padding: '14px 14px 12px',
+      border: `1px solid ${accentColor}33`,
+      overflow: 'hidden',
+    }}>
+      {/* Title */}
+      <div style={{
+        fontSize: 10,
+        color: accentColor,
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        marginBottom: 12,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="2.5">
+          <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+        </svg>
+        {t.combineTitle || 'Quá trình ghép hash'}
+      </div>
+
+      {/* Step 1: Two child hashes */}
+      <div style={{
+        display: 'flex',
+        gap: 6,
+        marginBottom: 6,
+        opacity: animStep >= 1 ? 1 : 0.2,
+        transform: animStep >= 1 ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'all 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+      }}>
+        {/* Left child */}
+        <div style={{
+          flex: 1,
+          padding: '6px 8px',
+          borderRadius: 8,
+          background: 'rgba(59,130,246,0.1)',
+          border: '1px solid rgba(59,130,246,0.3)',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            fontSize: 8,
+            fontWeight: 700,
+            color: '#3b82f6',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            marginBottom: 3,
+          }}>{t.panelLeft}</div>
+          <div style={{
+            fontFamily: 'var(--mono)',
+            fontSize: 9,
+            color: '#93c5fd',
+            wordBreak: 'break-all',
+            lineHeight: 1.4,
+          }}>{shortL}</div>
+        </div>
+        {/* Right child */}
+        <div style={{
+          flex: 1,
+          padding: '6px 8px',
+          borderRadius: 8,
+          background: isDuplicate ? 'rgba(251,191,36,0.08)' : 'rgba(6,182,212,0.1)',
+          border: `1px solid ${isDuplicate ? 'rgba(251,191,36,0.3)' : 'rgba(6,182,212,0.3)'}`,
+          textAlign: 'center',
+        }}>
+          <div style={{
+            fontSize: 8,
+            fontWeight: 700,
+            color: isDuplicate ? '#fbbf24' : '#06b6d4',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            marginBottom: 3,
+          }}>
+            {isDuplicate ? (t.panelDuplicate || 'TRÁI (NHÂN ĐÔI)') : t.panelRight}
+          </div>
+          <div style={{
+            fontFamily: 'var(--mono)',
+            fontSize: 9,
+            color: isDuplicate ? '#fcd34d' : '#67e8f9',
+            wordBreak: 'break-all',
+            lineHeight: 1.4,
+          }}>{shortR}</div>
+        </div>
+      </div>
+
+      {/* Step 2: Concatenation arrow + plus sign */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        margin: '6px 0',
+        opacity: animStep >= 2 ? 1 : 0.2,
+        transform: animStep >= 2 ? 'scale(1)' : 'scale(0.7)',
+        transition: 'all 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+      }}>
+        <div style={{
+          height: 1,
+          flex: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(168,85,247,0.4))',
+        }} />
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '4px 12px',
+          borderRadius: 99,
+          background: 'rgba(168,85,247,0.15)',
+          border: '1px solid rgba(168,85,247,0.35)',
+        }}>
+          <span style={{
+            fontSize: 10,
+            fontWeight: 800,
+            color: '#c084fc',
+          }}>+</span>
+          <span style={{
+            fontSize: 9,
+            fontWeight: 700,
+            color: '#a855f7',
+            letterSpacing: '0.05em',
+          }}>
+            {t.concatLabel || 'NỐI CHUỖI'}
+          </span>
+        </div>
+        <div style={{
+          height: 1,
+          flex: 1,
+          background: 'linear-gradient(90deg, rgba(168,85,247,0.4), transparent)',
+        }} />
+      </div>
+
+      {/* Arrow down to SHA-256 */}
+      <div style={{
+        textAlign: 'center',
+        margin: '4px 0',
+        opacity: animStep >= 2 ? 1 : 0.2,
+        transition: 'opacity 0.3s',
+      }}>
+        <svg width="16" height="20" viewBox="0 0 16 20" fill="none" style={{ display: 'inline-block' }}>
+          <path d="M8 0v16M3 12l5 5 5-5" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+        </svg>
+      </div>
+
+      {/* Step 3: SHA-256 processor */}
+      <div style={{
+        margin: '4px 0',
+        padding: '8px 12px',
+        borderRadius: 10,
+        background: 'linear-gradient(135deg, rgba(168,85,247,0.12), rgba(59,130,246,0.08))',
+        border: '1px solid rgba(168,85,247,0.3)',
+        textAlign: 'center',
+        opacity: animStep >= 2 ? 1 : 0.2,
+        transform: animStep >= 2 ? 'scale(1)' : 'scale(0.9)',
+        transition: 'all 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+      }}>
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '3px 10px',
+          borderRadius: 99,
+          background: 'rgba(168,85,247,0.2)',
+          border: '1px solid rgba(168,85,247,0.4)',
+        }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          <span style={{
+            fontFamily: 'var(--mono)',
+            fontSize: 11,
+            fontWeight: 800,
+            color: '#c084fc',
+            letterSpacing: '0.05em',
+          }}>SHA-256</span>
+        </div>
+        <div style={{
+          fontFamily: 'var(--mono)',
+          fontSize: 8.5,
+          color: 'var(--text3)',
+          marginTop: 5,
+        }}>
+          SHA-256({shortL} + {shortR})
+        </div>
+      </div>
+
+      {/* Arrow down to result */}
+      <div style={{
+        textAlign: 'center',
+        margin: '4px 0',
+        opacity: animStep >= 3 ? 1 : 0.2,
+        transition: 'opacity 0.3s',
+      }}>
+        <svg width="16" height="20" viewBox="0 0 16 20" fill="none" style={{ display: 'inline-block' }}>
+          <path d="M8 0v16M3 12l5 5 5-5" stroke={accentColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+        </svg>
+      </div>
+
+      {/* Step 4: Result hash */}
+      <div style={{
+        padding: '8px 10px',
+        borderRadius: 8,
+        background: `${accentColor}15`,
+        border: `1px solid ${accentColor}40`,
+        textAlign: 'center',
+        opacity: animStep >= 3 ? 1 : 0.2,
+        transform: animStep >= 3 ? 'translateY(0) scale(1)' : 'translateY(-8px) scale(0.95)',
+        transition: 'all 0.5s cubic-bezier(0.34,1.56,0.64,1)',
+      }}>
+        <div style={{
+          fontSize: 8,
+          fontWeight: 700,
+          color: accentColor,
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          marginBottom: 4,
+        }}>
+          {t.resultLabel || 'KẾT QUẢ'}
+        </div>
+        <div style={{
+          fontFamily: 'var(--mono)',
+          fontSize: 10,
+          color: accentColor,
+          fontWeight: 700,
+          wordBreak: 'break-all',
+          lineHeight: 1.5,
+          textShadow: `0 0 12px ${accentColor}50`,
+        }}>
+          {shortResult}
+        </div>
+      </div>
+
+      {/* Duplicate notice */}
+      {isDuplicate && (
+        <div style={{
+          marginTop: 8,
+          padding: '6px 10px',
+          borderRadius: 8,
+          background: 'rgba(251,191,36,0.08)',
+          border: '1px solid rgba(251,191,36,0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+        }}>
+          <span style={{ fontSize: 12 }}>⚠️</span>
+          <span style={{
+            fontSize: 10,
+            color: '#fbbf24',
+            lineHeight: 1.4,
+          }}>
+            {lang === 'vi' 
+              ? 'Nhánh mồ côi: Hash Trái được nhân đôi thay cho Hash Phải'
+              : 'Orphan branch: Left hash duplicated to fill Right'}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -167,6 +451,9 @@ export default function MerkleNode({
     const displayLabel = label || hash.slice(0, 12) + '…';
     return t.explLeaf.replace('{{label}}', displayLabel);
   };
+
+  const hasChildren = leftChild || rightChild;
+  const isDuplicate = leftChild && !rightChild;
 
   // ── Panel Content ──────────────────────────────────────────────────────
   const PanelContent = (
@@ -265,38 +552,17 @@ export default function MerkleNode({
         </div>
       </div>
 
-      {/* Children hashes */}
-      {(leftChild || rightChild) && (
+      {/* ★ NEW: Visual Hash Combining Diagram (for non-leaf nodes) */}
+      {hasChildren && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>
-            {t.panelChildHashes}
-          </div>
-          {leftChild && (
-            <div style={{ marginBottom: 5, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontSize: 9, color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{t.panelLeft}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--text2)' }}>{leftChild.slice(0, 20)}…</span>
-            </div>
-          )}
-          {rightChild ? (
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontSize: 9, color: '#06b6d4', fontWeight: 600, flexShrink: 0 }}>{t.panelRight}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--text2)' }}>{rightChild.slice(0, 20)}…</span>
-            </div>
-          ) : leftChild ? (
-            <div style={{
-              marginTop: 6,
-              background: 'rgba(6,182,212,0.06)',
-              border: '1px solid rgba(6,182,212,0.25)',
-              padding: '8px 10px', borderRadius: 8,
-            }}>
-              <span style={{ fontSize: 10, color: '#06b6d4', fontWeight: 700, display: 'block', marginBottom: 3 }}>
-                {lang === 'vi' ? '⚠️ Nhánh mồ côi (Nhân đôi)' : '⚠️ Orphan Branch (Duplicated)'}
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.5 }}>
-                {lang === 'vi' ? 'Node này được tính bằng Hash(Trái + Trái)' : 'This node is computed as Hash(Left + Left)'}
-              </span>
-            </div>
-          ) : null}
+          <HashCombineDiagram
+            leftHash={leftChild}
+            rightHash={rightChild}
+            resultHash={hash}
+            isDuplicate={isDuplicate}
+            lang={lang}
+            accentColor={s.accent}
+          />
         </div>
       )}
 
@@ -379,6 +645,22 @@ export default function MerkleNode({
         }}>
           {shortHash}
         </span>
+
+        {/* Type indicator below hash */}
+        {hasChildren && !isRoot && (
+          <span style={{
+            fontSize: 7,
+            color: s.accent,
+            fontFamily: 'var(--mono)',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            marginTop: 2,
+            opacity: isActive ? 0.9 : 0.5,
+            transition: 'opacity 0.2s',
+          }}>
+            SHA-256(L+R)
+          </span>
+        )}
 
         {/* Pulse dot when hovered + no panel */}
         {hovered && !isPanelOpen && (

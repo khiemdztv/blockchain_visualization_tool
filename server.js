@@ -15,20 +15,8 @@ const url = require('url');
 const fs = require('fs');
 const path_m = require('path');
 
-const PORT = process.env.PORT || 3001;
-
 // ═══════════════════════════════════════════════════════════════
-// RAG ENGINE — load on startup
-// ═══════════════════════════════════════════════════════════════
-const ragEngine = require('./rag_engine');
-ragEngine.init().then(() => {
-  console.log('[BlockEdu] RAG engine initialized.');
-}).catch(e => {
-  console.warn('[BlockEdu] RAG engine init failed (chatbot will use base mode):', e.message);
-});
-
-// ═══════════════════════════════════════════════════════════════
-// READ .env FILE (pure Node.js — no dotenv package needed)
+// READ .env FILE FIRST (before any module that uses env vars)
 // ═══════════════════════════════════════════════════════════════
 try {
   const envPath = path_m.join(__dirname, '.env');
@@ -44,10 +32,31 @@ try {
       if (key && !process.env[key]) process.env[key] = val;
     }
     console.log('[BlockEdu] .env loaded successfully.');
+  } else {
+    console.warn('[BlockEdu] No .env file found — create one with MONGODB_URI, JWT_SECRET, etc.');
   }
 } catch (envErr) {
   console.warn('[BlockEdu] Could not read .env:', envErr.message);
 }
+
+const PORT = process.env.PORT || 3001;
+
+// ═══════════════════════════════════════════════════════════════
+// DATABASE & ROUTE MODULES
+// ═══════════════════════════════════════════════════════════════
+const { connectDB } = require('./db');
+const { handleAuthRoute } = require('./routes/auth');
+const { handleQuizRoute } = require('./routes/quiz');
+
+// ═══════════════════════════════════════════════════════════════
+// RAG ENGINE — load on startup
+// ═══════════════════════════════════════════════════════════════
+const ragEngine = require('./rag_engine');
+ragEngine.init().then(() => {
+  console.log('[BlockEdu] RAG engine initialized.');
+}).catch(e => {
+  console.warn('[BlockEdu] RAG engine init failed (chatbot will use base mode):', e.message);
+});
 
 // ═══════════════════════════════════════════════════════════════
 // BLOCKCHAIN CORE (Mirrors Java: Block.java, Blockchain.java,
@@ -233,7 +242,7 @@ let blockchain = new Blockchain(3);
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
   const parsed = url.parse(req.url, true);
@@ -270,6 +279,24 @@ const server = http.createServer(async (req, res) => {
       } else {
         json(res, { error: 'Not found' }, 404);
       }
+      return;
+    }
+
+    // ── AUTH & QUIZ ROUTES (delegated to modules) ──────────
+    if (path.startsWith('/api/auth/')) {
+      const handled = await handleAuthRoute(req, res, path);
+      if (handled) return;
+    }
+    if (path.startsWith('/api/quiz/') || path.startsWith('/api/exam/') || path.startsWith('/api/cert/')) {
+      const handled = await handleQuizRoute(req, res, path, parsed);
+      if (handled) return;
+    }
+
+    // ── GET /api/config ───────────────────────────────────────
+    if (path === '/api/config' && req.method === 'GET') {
+      json(res, {
+        googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+      });
       return;
     }
 
@@ -539,6 +566,13 @@ function readBody(req) {
     req.on('error', reject);
   });
 }
+
+// Connect to MongoDB before starting server
+connectDB().then(() => {
+  console.log('[BlockEdu] Database module initialized.');
+}).catch(e => {
+  console.warn('[BlockEdu] DB init warning:', e.message);
+});
 
 server.listen(PORT, () => {
   console.log(`[BlockEdu] Node.js Gateway + Core running on http://localhost:${PORT}`);

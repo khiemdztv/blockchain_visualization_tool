@@ -1,6 +1,6 @@
 export const LANG = {
   vi: {
-    nav: { home: "Trang chủ", demo: "Mô phỏng Hash", mining: "Khai thác", rsa: "Mã hóa RSA", about: "Dự Án", team: "Nhóm", merkleTab: "Cây Merkle" },
+    nav: { home: "Trang chủ", demo: "Mô phỏng Hash", mining: "Khai thác", rsa: "Mã hóa RSA", quiz: "Quiz", about: "Dự Án", team: "Nhóm", merkleTab: "Cây Merkle" },
     home: {
       badge: "SVNCKH 2025 — Nghiên Cứu Khoa Học Sinh Viên",
       title1: "HubBlock", title2: "Công cụ Trực quan hóa SHA-256",
@@ -183,6 +183,12 @@ export const LANG = {
       explRoot: "Gốc Merkle là băm duy nhất đại diện cho toàn bộ tập giao dịch. Bất kỳ thay đổi nào đối với bất kỳ giao dịch nào cũng sẽ lan truyền lên và thay đổi gốc này.",
       explIntermediate: "Nút nội bộ này được tính như sau: SHA-256(conTrái + conPhải). Nó cho phép xác minh các cây con mà không cần lộ tất cả dữ liệu.",
       explLeaf: "Nút lá này là băm SHA-256 trực tiếp của dữ liệu giao dịch gốc: \"{{label}}\".",
+      mergeFormula: "PHÉP GHÉP SHA-256",
+      mergeDuplicate: "⚠ Nhánh mồ côi (Trái = Phải)",
+      combineTitle: "Quá trình ghép Hash",
+      concatLabel: "NỐI CHUỖI",
+      resultLabel: "KẾT QUẢ",
+      panelDuplicate: "TRÁI (NHÂN ĐÔI)",
     },
     footerBuilt: "Phát triển bởi HubBlock Team", footerUni: "Trường Đại học Ngân hàng TP.HCM",
     footer: "Công cụ trực quan hóa Blockchain cho SVNCKH 2025",
@@ -242,7 +248,7 @@ export const LANG = {
     }
   },
   en: {
-    nav: { home: "Home", demo: "Hash Demo", mining: "Mining", rsa: "RSA Crypto", about: "Project", team: "Team", merkleTab: "Merkle Tree" },
+    nav: { home: "Home", demo: "Hash Demo", mining: "Mining", rsa: "RSA Crypto", quiz: "Quiz", about: "Project", team: "Team", merkleTab: "Merkle Tree" },
     home: {
       badge: "SVNCKH 2025 — Student Scientific Research",
       title1: "HubBlock", title2: "SHA-256 Visualizer",
@@ -425,6 +431,12 @@ export const LANG = {
       explRoot: "The Merkle Root is the single hash representing the entire transaction set. Any change to any transaction will propagate up and change this root.",
       explIntermediate: "This internal node is computed as: SHA-256(leftChild + rightChild). It allows verification of sub-trees without exposing all data.",
       explLeaf: "This leaf node is the direct SHA-256 hash of the original transaction data: \"{{label}}\".",
+      mergeFormula: "SHA-256 MERGE",
+      mergeDuplicate: "⚠ Duplicated (L = R)",
+      combineTitle: "Hash Combining Process",
+      concatLabel: "CONCATENATE",
+      resultLabel: "RESULT",
+      panelDuplicate: "LEFT (DUPLICATED)",
     },
     footerBuilt: "Developed by HubBlock Team", footerUni: "Ho Chi Minh City University of Banking",
     footer: "Blockchain Visualizer for SVNCKH 2025",
