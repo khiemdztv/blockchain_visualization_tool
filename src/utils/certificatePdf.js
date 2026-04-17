@@ -87,7 +87,7 @@ export async function generateCertPDF(certificate) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10.5);
   doc.setTextColor(40, 46, 58);
-  doc.text(code, 56.5, 170.5);
+  doc.text(code, 35.5, 161.5);
 
   doc.save(`HubBlock_Certificate_${code}.pdf`);
 }
