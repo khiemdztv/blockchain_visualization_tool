@@ -81,13 +81,13 @@ export async function generateCertPDF(certificate) {
   }
   doc.setFontSize(mmClamp(34 - Math.max(0, safeName.length - 18) * 0.7, 18, 34));
   doc.setTextColor(22, 24, 30);
-  doc.text(safeName.toUpperCase(), 151.69, 102.39, { align: 'center' });
+  doc.text(safeName.toUpperCase(), 151.69, 110.39, { align: 'center' });
 
   // 3) Overlay Certificate Code
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10.5);
   doc.setTextColor(40, 46, 58);
-  doc.text(code, 77.5, 161.5);
+  doc.text(code, 79, 161.5);
 
   doc.save(`HubBlock_Certificate_${code}.pdf`);
 }
