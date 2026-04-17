@@ -406,11 +406,6 @@ export default function QuizView({ lang }) {
           <div className="practice-question-card">
             <div className="practice-q-header">
               <span className="practice-q-number">{isVi ? 'Câu' : 'Q'} {examIdx + 1}/{examQuestions.length}</span>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <span className={`badge ${q.difficulty === 'easy' ? 'badge-green' : q.difficulty === 'medium' ? 'badge-amber' : 'badge-purple'}`}>
-                  {DIFF_LABELS[q.difficulty]?.[lang]}
-                </span>
-              </div>
             </div>
             <div className="practice-q-text">{qText}</div>
             <div className="practice-options">
