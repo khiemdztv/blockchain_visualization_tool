@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { generateCertPDF } from '../utils/certificatePdf.js';
 
 export default function ProfileView({ lang }) {
   const { user, token } = useAuth();
@@ -78,38 +79,7 @@ export default function ProfileView({ lang }) {
                   </div>
                 </div>
                 <button className="btn btn-ghost btn-sm" onClick={() => {
-                  import('jspdf').then(({ jsPDF }) => {
-                    const strip = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
-                    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                    const safeName = strip(c.displayName || 'Student');
-                    doc.setFillColor(15, 23, 42); doc.rect(0, 0, 297, 210, 'F');
-                    doc.setDrawColor(124, 58, 237); doc.setLineWidth(2); doc.rect(10, 10, 277, 190);
-                    doc.setDrawColor(59, 130, 246); doc.setLineWidth(0.5); doc.rect(14, 14, 269, 182);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(14); doc.setTextColor(148, 163, 184);
-                    doc.text('HUBBLOCK EDUCATION PLATFORM', 148.5, 35, { align: 'center' });
-                    doc.setFontSize(32); doc.setTextColor(192, 132, 252);
-                    doc.text('CERTIFICATE', 148.5, 55, { align: 'center' });
-                    doc.setFontSize(14); doc.setTextColor(148, 163, 184);
-                    doc.text('OF ACHIEVEMENT', 148.5, 65, { align: 'center' });
-                    doc.setDrawColor(124, 58, 237); doc.setLineWidth(0.5); doc.line(80, 72, 217, 72);
-                    doc.setFontSize(20); doc.setTextColor(56, 189, 248);
-                    doc.text('Foundation of Blockchain', 148.5, 88, { align: 'center' });
-                    doc.setFontSize(12); doc.setTextColor(148, 163, 184);
-                    doc.text('This certifies that', 148.5, 103, { align: 'center' });
-                    doc.setFontSize(24); doc.setTextColor(241, 245, 249);
-                    doc.text(safeName, 148.5, 118, { align: 'center' });
-                    doc.setFontSize(12); doc.setTextColor(148, 163, 184);
-                    doc.text('has successfully passed the Foundation of Blockchain examination', 148.5, 133, { align: 'center' });
-                    doc.setFontSize(16); doc.setTextColor(74, 222, 128);
-                    doc.text('PASSED', 148.5, 146, { align: 'center' });
-                    doc.setFontSize(10); doc.setTextColor(100, 116, 139);
-                    const dateStr = new Date(c.issuedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-                    doc.text(`Certificate Code: ${c.certCode}`, 148.5, 165, { align: 'center' });
-                    doc.text(`Issued: ${dateStr}`, 148.5, 173, { align: 'center' });
-                    doc.text('Verify at: hubblock.edu/verify', 148.5, 181, { align: 'center' });
-                    doc.save(`HubBlock_Certificate_${c.certCode}.pdf`);
-                  }).catch(err => { console.error(err); alert('Error: ' + err.message); });
+                  generateCertPDF(c).catch(err => { console.error(err); alert('Error: ' + err.message); });
                 }}>
                   {isVi ? 'Tải PDF' : 'Download PDF'}
                 </button>
