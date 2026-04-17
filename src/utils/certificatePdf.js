@@ -16,6 +16,9 @@ async function fetchAsDataUrl(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load certificate template: ${url}`);
   const blob = await res.blob();
+  if (blob.type && !blob.type.startsWith('image/')) {
+    throw new Error(`Certificate template is not an image (got ${blob.type || 'unknown'}). Check that ${url} is deployed as a static asset.`);
+  }
   const dataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Failed to read template image'));
