@@ -163,8 +163,8 @@ function AppInner() {
       {/* Footer */}
       <Footer lang={lang} />
 
-      {/* AI Chatbot — fixed overlay, receives current language & page */}
-      <Chatbot lang={lang} currentPage={tab} />
+      {/* AI Chatbot — fixed overlay, hidden on quiz page */}
+      {tab !== "quiz" && <Chatbot lang={lang} currentPage={tab} />}
 
       {/* Login Modal */}
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} lang={lang} />
