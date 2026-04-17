@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { jsPDF } from 'jspdf';
 
 const TOPIC_META = {
   hash: { icon: '#️⃣', vi: 'Hàm băm & SHA-256', en: 'Hash Functions & SHA-256' },
@@ -548,7 +549,6 @@ function removeDiacritics(str) {
 // Generate PDF certificate using jsPDF
 async function generateCertPDF(certificate) {
   try {
-    const { jsPDF } = await import('jspdf');
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const safeName = removeDiacritics(certificate.displayName || 'Student');
 
