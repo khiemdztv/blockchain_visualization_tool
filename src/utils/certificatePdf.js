@@ -12,6 +12,30 @@ function mmClamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+async function applyCharmonmanFont(doc, basePath) {
+  const fontUrl = `${basePath}fonts/Charmonman-Regular.ttf`;
+  const res = await fetch(fontUrl);
+  if (!res.ok) return false;
+
+  const fontBuffer = await res.arrayBuffer();
+  const fontBase64 = arrayBufferToBase64(fontBuffer);
+  doc.addFileToVFS('Charmonman-Regular.ttf', fontBase64);
+  doc.addFont('Charmonman-Regular.ttf', 'Charmonman', 'normal');
+  doc.setFont('Charmonman', 'normal');
+  return true;
+}
+
 async function fetchAsDataUrl(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load certificate template: ${url}`);
@@ -50,8 +74,11 @@ export async function generateCertPDF(certificate) {
   // 2) Overlay Name at measured anchor (A4 landscape mm)
   // Provided anchors:
   // - name (center): (151.69, 102.39)
-  // - code (left):   (78.89, 132.72)
-  doc.setFont('times', 'italic');
+  // - code (after "CERTIFICATE NO.:"): (56.5, 170.5)
+  const hasCharmonman = await applyCharmonmanFont(doc, normalizedBase).catch(() => false);
+  if (!hasCharmonman) {
+    doc.setFont('times', 'italic');
+  }
   doc.setFontSize(mmClamp(34 - Math.max(0, safeName.length - 18) * 0.7, 18, 34));
   doc.setTextColor(22, 24, 30);
   doc.text(safeName.toUpperCase(), 151.69, 102.39, { align: 'center' });
@@ -60,7 +87,7 @@ export async function generateCertPDF(certificate) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10.5);
   doc.setTextColor(40, 46, 58);
-  doc.text(code, 78.89, 132.72);
+  doc.text(code, 56.5, 170.5);
 
   doc.save(`HubBlock_Certificate_${code}.pdf`);
 }
