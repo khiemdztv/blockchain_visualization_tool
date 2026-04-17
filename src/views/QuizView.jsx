@@ -479,7 +479,10 @@ export default function QuizView({ lang }) {
               </div>
               <button className="btn btn-primary" style={{ marginTop: 12 }}
                 disabled={!certName.trim()}
-                onClick={() => generateCertPDF({ ...certificate, displayName: certName.trim() })}>
+                onClick={() => generateCertPDF({ ...certificate, displayName: certName.trim() }).catch(err => {
+                  console.error(err);
+                  alert('Không tải được certificate template để xuất PDF. Mở Console để xem chi tiết.\n\n' + (err?.message || err));
+                })}>
                 {isVi ? 'Tải chứng chỉ PDF' : 'Download PDF Certificate'}
               </button>
             </div>

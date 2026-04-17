@@ -26,7 +26,7 @@ async function fetchAsDataUrl(url) {
     reader.readAsDataURL(blob);
   });
   // "data:image/png;base64,...."
-  const match = /^data:(image\\/[a-zA-Z0-9.+-]+);base64,/.exec(dataUrl);
+  const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,/.exec(dataUrl);
   return { dataUrl, mime: match ? match[1] : 'image/png' };
 }
 
@@ -39,7 +39,11 @@ export async function generateCertPDF(certificate) {
   const safeName = removeDiacritics(nameRaw);
 
   // 1) Draw template image full-page
-  const { dataUrl, mime } = await fetchAsDataUrl('/images/certificate.png');
+  const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) ? import.meta.env.BASE_URL : '/';
+  const normalizedBase = base.endsWith('/') ? base : base + '/';
+  // Cache-bust to avoid stale CDN/browser caches after deploys
+  const templateUrl = `${normalizedBase}images/certificate.png?v=${Date.now()}`;
+  const { dataUrl, mime } = await fetchAsDataUrl(templateUrl);
   const format = mime.includes('jpeg') || mime.includes('jpg') ? 'JPEG' : 'PNG';
   doc.addImage(dataUrl, format, 0, 0, W, H);
 

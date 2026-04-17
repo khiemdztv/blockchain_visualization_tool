@@ -79,7 +79,10 @@ export default function ProfileView({ lang }) {
                   </div>
                 </div>
                 <button className="btn btn-ghost btn-sm" onClick={() => {
-                  generateCertPDF(c).catch(err => { console.error(err); alert('Error: ' + err.message); });
+                  generateCertPDF(c).catch(err => {
+                    console.error(err);
+                    alert('Không tải được certificate template để xuất PDF.\n\n' + (err?.message || err));
+                  });
                 }}>
                   {isVi ? 'Tải PDF' : 'Download PDF'}
                 </button>
