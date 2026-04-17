@@ -539,72 +539,86 @@ export default function QuizView({ lang }) {
   return null;
 }
 
+// Remove Vietnamese diacritics for PDF rendering (Helvetica doesn't support them)
+function removeDiacritics(str) {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+
 // Generate PDF certificate using jsPDF
 async function generateCertPDF(certificate) {
-  const { jsPDF } = await import('jspdf');
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  try {
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const safeName = removeDiacritics(certificate.displayName || 'Student');
 
-  // Background
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, 297, 210, 'F');
+    // Background
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, 297, 210, 'F');
 
-  // Border
-  doc.setDrawColor(124, 58, 237);
-  doc.setLineWidth(2);
-  doc.rect(10, 10, 277, 190);
-  doc.setDrawColor(59, 130, 246);
-  doc.setLineWidth(0.5);
-  doc.rect(14, 14, 269, 182);
+    // Border
+    doc.setDrawColor(124, 58, 237);
+    doc.setLineWidth(2);
+    doc.rect(10, 10, 277, 190);
+    doc.setDrawColor(59, 130, 246);
+    doc.setLineWidth(0.5);
+    doc.rect(14, 14, 269, 182);
 
-  // Title
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(148, 163, 184);
-  doc.text('HUBBLOCK EDUCATION PLATFORM', 148.5, 35, { align: 'center' });
+    // Title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(148, 163, 184);
+    doc.text('HUBBLOCK EDUCATION PLATFORM', 148.5, 35, { align: 'center' });
 
-  doc.setFontSize(32);
-  doc.setTextColor(192, 132, 252);
-  doc.text('CERTIFICATE', 148.5, 55, { align: 'center' });
+    doc.setFontSize(32);
+    doc.setTextColor(192, 132, 252);
+    doc.text('CERTIFICATE', 148.5, 55, { align: 'center' });
 
-  doc.setFontSize(14);
-  doc.setTextColor(148, 163, 184);
-  doc.text('OF ACHIEVEMENT', 148.5, 65, { align: 'center' });
+    doc.setFontSize(14);
+    doc.setTextColor(148, 163, 184);
+    doc.text('OF ACHIEVEMENT', 148.5, 65, { align: 'center' });
 
-  // Line
-  doc.setDrawColor(124, 58, 237);
-  doc.setLineWidth(0.5);
-  doc.line(80, 72, 217, 72);
+    // Line
+    doc.setDrawColor(124, 58, 237);
+    doc.setLineWidth(0.5);
+    doc.line(80, 72, 217, 72);
 
-  // Foundation
-  doc.setFontSize(20);
-  doc.setTextColor(56, 189, 248);
-  doc.text('Foundation of Blockchain', 148.5, 88, { align: 'center' });
+    // Foundation
+    doc.setFontSize(20);
+    doc.setTextColor(56, 189, 248);
+    doc.text('Foundation of Blockchain', 148.5, 88, { align: 'center' });
 
-  // Name
-  doc.setFontSize(12);
-  doc.setTextColor(148, 163, 184);
-  doc.text('This certifies that', 148.5, 103, { align: 'center' });
+    // Name
+    doc.setFontSize(12);
+    doc.setTextColor(148, 163, 184);
+    doc.text('This certifies that', 148.5, 103, { align: 'center' });
 
-  doc.setFontSize(24);
-  doc.setTextColor(241, 245, 249);
-  doc.text(certificate.displayName || 'Student', 148.5, 118, { align: 'center' });
+    doc.setFontSize(24);
+    doc.setTextColor(241, 245, 249);
+    doc.text(safeName, 148.5, 118, { align: 'center' });
 
-  // PASS status (no score)
-  doc.setFontSize(12);
-  doc.setTextColor(148, 163, 184);
-  doc.text('has successfully passed the Foundation of Blockchain examination', 148.5, 133, { align: 'center' });
+    // PASS status (no score)
+    doc.setFontSize(12);
+    doc.setTextColor(148, 163, 184);
+    doc.text('has successfully passed the Foundation of Blockchain examination', 148.5, 133, { align: 'center' });
 
-  doc.setFontSize(16);
-  doc.setTextColor(74, 222, 128);
-  doc.text('PASSED', 148.5, 146, { align: 'center' });
+    doc.setFontSize(16);
+    doc.setTextColor(74, 222, 128);
+    doc.text('PASSED', 148.5, 146, { align: 'center' });
 
-  // Certificate code & date
-  doc.setFontSize(10);
-  doc.setTextColor(100, 116, 139);
-  const dateStr = new Date(certificate.issuedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  doc.text(`Certificate Code: ${certificate.certCode}`, 148.5, 165, { align: 'center' });
-  doc.text(`Issued: ${dateStr}`, 148.5, 173, { align: 'center' });
-  doc.text('Verify at: hubblock.edu/verify', 148.5, 181, { align: 'center' });
+    // Certificate code & date
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    const dateStr = certificate.issuedAt
+      ? new Date(certificate.issuedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    doc.text(`Certificate Code: ${certificate.certCode}`, 148.5, 165, { align: 'center' });
+    doc.text(`Issued: ${dateStr}`, 148.5, 173, { align: 'center' });
+    doc.text('Verify at: hubblock.edu/verify', 148.5, 181, { align: 'center' });
 
-  doc.save(`HubBlock_Certificate_${certificate.certCode}.pdf`);
+    doc.save(`HubBlock_Certificate_${certificate.certCode}.pdf`);
+  } catch (err) {
+    console.error('PDF generation error:', err);
+    alert('Error generating PDF: ' + err.message);
+  }
 }
