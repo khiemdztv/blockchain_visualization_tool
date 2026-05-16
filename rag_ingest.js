@@ -24,8 +24,9 @@ const DOCS_DIR = path.join(__dirname, 'Documents');
 const OUTPUT_PATH = path.join(__dirname, 'rag_index.json');
 const CHUNK_SIZE = 1200;    // characters per chunk (~300 tokens)
 const CHUNK_OVERLAP = 150;  // overlap characters
-const BATCH_SIZE = 10;      // embed N chunks at once (rate limit friendly)
-const EMBED_MODEL = 'text-embedding-3-small';
+const BATCH_SIZE = 5;       // embed N chunks at once (rate limit friendly)
+const EMBED_MODEL_OPENAI = 'text-embedding-3-small';
+const EMBED_MODEL_GEMINI = 'gemini-embedding-001';
 
 // ─── Load .env manually ───────────────────────────────────────────
 try {
@@ -44,7 +45,10 @@ try {
   }
 } catch (e) { /* ignore */ }
 
-const API_KEY = (process.env.OPENAI_API_KEY || '').trim();
+const GEMINI_KEY = (process.env.GEMINI_API_KEY || '').trim();
+const OPENAI_KEY = (process.env.OPENAI_API_KEY || '').trim();
+const USE_GEMINI = !!GEMINI_KEY;
+const API_KEY = GEMINI_KEY || OPENAI_KEY;
 
 // ─── Text splitter (manual, no langchain needed) ──────────────────
 function splitTextIntoChunks(text, chunkSize, overlap) {
@@ -85,11 +89,11 @@ function estimatePage(charOffset, totalChars, totalPages) {
   return Math.max(1, Math.ceil((charOffset / totalChars) * totalPages));
 }
 
-// ─── Embed batch of texts via OpenAI ─────────────────────────────
-function embedBatch(texts) {
+// ─── Embed batch via OpenAI ─────────────────────────────────
+function embedBatchOpenAI(texts) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify({
-      model: EMBED_MODEL,
+      model: EMBED_MODEL_OPENAI,
       input: texts.map(t => t.slice(0, 8000)),
     });
 
@@ -101,7 +105,7 @@ function embedBatch(texts) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_KEY}`,
         'Content-Length': Buffer.byteLength(payload),
       },
     }, (res) => {
@@ -124,6 +128,54 @@ function embedBatch(texts) {
     req.write(payload);
     req.end();
   });
+}
+
+// ─── Embed batch via Google Gemini (batchEmbedContents) ───────
+function embedBatchGemini(texts) {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify({
+      requests: texts.map(t => ({
+        model: `models/${EMBED_MODEL_GEMINI}`,
+        content: { parts: [{ text: t.slice(0, 8000) }] },
+      })),
+    });
+
+    let data = '';
+    const req = https.request({
+      hostname: 'generativelanguage.googleapis.com',
+      port: 443,
+      path: `/v1beta/models/${EMBED_MODEL_GEMINI}:batchEmbedContents?key=${GEMINI_KEY}`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    }, (res) => {
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.error) return reject(new Error(parsed.error.message || JSON.stringify(parsed.error)));
+          if (parsed.embeddings) {
+            resolve(parsed.embeddings.map(e => e.values));
+          } else {
+            reject(new Error('No embeddings in Gemini response'));
+          }
+        } catch (e) {
+          reject(new Error('Gemini parse error: ' + data.slice(0, 200)));
+        }
+      });
+    });
+    req.setTimeout(60000, () => { req.destroy(); reject(new Error('Timeout')); });
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
+// ─── Unified batch embed ───────────────────────────────────
+function embedBatch(texts) {
+  return USE_GEMINI ? embedBatchGemini(texts) : embedBatchOpenAI(texts);
 }
 
 // ─── Sleep helper ─────────────────────────────────────────────────
@@ -193,9 +245,10 @@ async function main() {
   console.log('='.repeat(50));
 
   if (!API_KEY) {
-    console.error('❌ OPENAI_API_KEY not found in .env file!');
+    console.error('❌ No API key found! Add GEMINI_API_KEY or OPENAI_API_KEY to .env');
     process.exit(1);
   }
+  console.log(`🔑 Using: ${USE_GEMINI ? 'Google Gemini (text-embedding-004)' : 'OpenAI (text-embedding-3-small)'}`);
 
   // Get PDF list
   const files = fs.readdirSync(DOCS_DIR).filter(f => f.toLowerCase().endsWith('.pdf'));
@@ -219,7 +272,8 @@ async function main() {
 
   console.log(`\n\n📊 Total chunks to embed: ${allChunks.length}`);
   console.log(`💰 Estimated cost: ~$${(allChunks.length * CHUNK_SIZE * 0.00000002).toFixed(4)} USD`);
-  console.log('\n🔗 Starting embedding via OpenAI text-embedding-3-small...\n');
+  const embLabel = USE_GEMINI ? 'Gemini text-embedding-004' : 'OpenAI text-embedding-3-small';
+  console.log(`\n🔗 Starting embedding via ${embLabel}...\n`);
 
   // Embed in batches
   let embedded = 0;
@@ -236,9 +290,9 @@ async function main() {
       const pct = Math.round((embedded / allChunks.length) * 100);
       process.stdout.write(`\r  ⚡ Progress: ${embedded}/${allChunks.length} chunks (${pct}%)`);
 
-      // Rate limit: 500ms between batches
+      // Rate limit: Gemini free = 15 RPM, so ~4s between requests
       if (i + BATCH_SIZE < allChunks.length) {
-        await sleep(500);
+        await sleep(USE_GEMINI ? 5000 : 500);
       }
     } catch (e) {
       console.error(`\n  ❌ Embedding batch ${i}-${i + BATCH_SIZE} failed:`, e.message);

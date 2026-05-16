@@ -19,6 +19,7 @@ const https = require('https');
 
 const INDEX_PATH = path.join(__dirname, 'rag_index.json');
 const OPENAI_EMBEDDING_MODEL = 'text-embedding-3-small';
+const GEMINI_EMBEDDING_MODEL = 'gemini-embedding-001';
 
 let store = []; // in-memory vector store
 let initialized = false;
@@ -35,12 +36,12 @@ function cosineSimilarity(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-// ─── Embed a single text via OpenAI ──────────────────────────────
-function embedText(text, apiKey) {
+// ─── Embed via OpenAI ────────────────────────────────────────
+function embedTextOpenAI(text, apiKey) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify({
       model: OPENAI_EMBEDDING_MODEL,
-      input: text.slice(0, 8000), // max safe length
+      input: text.slice(0, 8000),
     });
 
     let data = '';
@@ -73,6 +74,56 @@ function embedText(text, apiKey) {
   });
 }
 
+// ─── Embed via Google Gemini ────────────────────────────────────
+function embedTextGemini(text, apiKey) {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify({
+      model: `models/${GEMINI_EMBEDDING_MODEL}`,
+      content: { parts: [{ text: text.slice(0, 8000) }] },
+    });
+
+    let data = '';
+    const req = https.request({
+      hostname: 'generativelanguage.googleapis.com',
+      port: 443,
+      path: `/v1beta/models/${GEMINI_EMBEDDING_MODEL}:embedContent?key=${apiKey}`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    }, (res) => {
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.error) return reject(new Error(parsed.error.message || JSON.stringify(parsed.error)));
+          if (parsed.embedding && parsed.embedding.values) {
+            resolve(parsed.embedding.values);
+          } else {
+            reject(new Error('No embedding in response'));
+          }
+        } catch (e) {
+          reject(new Error('Gemini embedding parse error: ' + data.slice(0, 200)));
+        }
+      });
+    });
+    req.setTimeout(15000, () => { req.destroy(); reject(new Error('Embedding timeout')); });
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
+// ─── Unified embed ──────────────────────────────────────────
+function embedText(text) {
+  const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+  const openaiKey = (process.env.OPENAI_API_KEY || '').trim();
+  if (geminiKey) return embedTextGemini(text, geminiKey);
+  if (openaiKey) return embedTextOpenAI(text, openaiKey);
+  return Promise.reject(new Error('No API key for embeddings'));
+}
+
 // ─── Init: load index from disk ───────────────────────────────────
 async function init() {
   if (initialized) return;
@@ -94,32 +145,97 @@ async function init() {
   }
 }
 
+// ─── Keyword / BM25-lite search (no API needed) ─────────────────────
+function tokenize(text) {
+  return text.toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 1);
+}
+
+// Pre-build IDF map on init for faster keyword search
+let idfMap = null;
+function buildIDF() {
+  if (idfMap) return;
+  idfMap = {};
+  const N = store.length;
+  const df = {};
+  for (const chunk of store) {
+    const words = new Set(tokenize(chunk.text));
+    for (const w of words) {
+      df[w] = (df[w] || 0) + 1;
+    }
+  }
+  for (const w in df) {
+    idfMap[w] = Math.log((N - df[w] + 0.5) / (df[w] + 0.5) + 1);
+  }
+}
+
+function keywordSearch(query, k = 4) {
+  buildIDF();
+  const qTokens = tokenize(query);
+  if (qTokens.length === 0) return [];
+
+  const scored = store.map(chunk => {
+    const text = chunk.text.toLowerCase();
+    const docTokens = tokenize(chunk.text);
+    const docLen = docTokens.length;
+    const avgDL = 300; // approximate average doc length in tokens
+    const kParam = 1.2;
+    const b = 0.75;
+    let score = 0;
+
+    // BM25 scoring
+    const tf = {};
+    for (const t of docTokens) tf[t] = (tf[t] || 0) + 1;
+    for (const qt of qTokens) {
+      const termFreq = tf[qt] || 0;
+      if (termFreq === 0) continue;
+      const idf = idfMap[qt] || 0;
+      score += idf * (termFreq * (kParam + 1)) / (termFreq + kParam * (1 - b + b * docLen / avgDL));
+    }
+
+    // Bonus for exact phrase match
+    if (text.includes(query.toLowerCase().trim())) {
+      score += 5;
+    }
+
+    return { ...chunk, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, k).filter(c => c.score > 0).map(({ embedding, ...rest }) => rest);
+}
+
 // ─── Search for similar chunks ────────────────────────────────────
 async function searchSimilar(query, k = 4) {
   if (store.length === 0) return [];
 
-  const apiKey = (process.env.OPENAI_API_KEY || '').trim();
-  if (!apiKey) return [];
+  // Try vector search first if embedding API available
+  const hasEmbedKey = (process.env.GEMINI_API_KEY || '').trim() || (process.env.OPENAI_API_KEY || '').trim();
+  if (hasEmbedKey) {
+    try {
+      const queryVec = await embedText(query);
 
-  try {
-    const queryVec = await embedText(query, apiKey);
-
-    // Score all chunks
-    const scored = store.map(chunk => ({
-      ...chunk,
-      score: cosineSimilarity(queryVec, chunk.embedding),
-    }));
-
-    // Sort by score descending, pick top-k
-    scored.sort((a, b) => b.score - a.score);
-    const topK = scored.slice(0, k);
-
-    // Remove embedding from results (save memory)
-    return topK.map(({ embedding, ...rest }) => rest);
-  } catch (e) {
-    console.error('[RAG] searchSimilar error:', e.message);
-    return [];
+      // Dimension mismatch → fall through to keyword search
+      if (store[0].embedding && store[0].embedding.length !== queryVec.length) {
+        console.warn(`[RAG] Dimension mismatch (stored=${store[0].embedding.length}, query=${queryVec.length}). Using keyword search.`);
+      } else {
+        const scored = store.map(chunk => ({
+          ...chunk,
+          score: cosineSimilarity(queryVec, chunk.embedding),
+        }));
+        scored.sort((a, b) => b.score - a.score);
+        const topK = scored.slice(0, k);
+        return topK.map(({ embedding, ...rest }) => rest);
+      }
+    } catch (e) {
+      console.warn('[RAG] Embedding failed, using keyword search:', e.message);
+    }
   }
+
+  // Fallback: keyword/BM25 search (no API needed)
+  return keywordSearch(query, k);
 }
 
 // ─── Build RAG context string for system prompt ───────────────────

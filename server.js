@@ -435,7 +435,7 @@ const server = http.createServer(async (req, res) => {
       });
 
     // ── POST /api/chat ────────────────────────────────────────
-    // AI chatbot endpoint — RAG-powered, proxies to OpenAI GPT-4o-mini
+    // AI chatbot endpoint — RAG-powered, proxies to Google Gemini (OpenAI-compatible)
     } else if (path === '/api/chat' && req.method === 'POST') {
       const body = await readBody(req);
       const { message = '', context = {} } = body;
@@ -443,9 +443,14 @@ const server = http.createServer(async (req, res) => {
       if (!message.trim()) { json(res, { error: 'message is required' }, 400); return; }
       if (message.length > 2000) { json(res, { error: 'message too long' }, 400); return; }
 
-      const apiKey = (process.env.OPENAI_API_KEY || '').trim();
-      if (!apiKey) {
-        json(res, { error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to your .env file.' }, 503);
+      // Priority: Groq > Gemini > OpenAI
+      const groqKey = (process.env.GROQ_API_KEY || '').trim();
+      const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+      const openaiKey = (process.env.OPENAI_API_KEY || '').trim();
+      const provider = groqKey ? 'groq' : geminiKey ? 'gemini' : openaiKey ? 'openai' : null;
+      const apiKey = groqKey || geminiKey || openaiKey;
+      if (!provider) {
+        json(res, { error: 'AI API key not configured. Add GROQ_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY to .env' }, 503);
         return;
       }
 
@@ -460,7 +465,7 @@ const server = http.createServer(async (req, res) => {
       // ── Admin data context ─────────────────────────────────────
       let adminDataContext = '';
       if (userRole === 'admin') {
-        const adminKeywords = /người dùng|user|đăng ký|register|thống kê|statistic|tiến độ|progress|bao nhiêu|how many|tổng|total|học sinh|student|giảng viên|instructor|tài khoản|account|log|hoạt động|activity/i;
+        const adminKeywords = /nguoi dung|người dùng|user|dang ky|đăng ký|register|thong ke|thống kê|statistic|tien do|tiến độ|progress|bao nhieu|bao nhiêu|how many|tong|tổng|total|hoc sinh|học sinh|student|giang vien|giảng viên|instructor|tai khoan|tài khoản|account|log|hoat dong|hoạt động|activity|quiz|exam|chung chi|chứng chỉ|certificate/i;
         if (adminKeywords.test(message)) {
           try {
             const User_m = require('./models/User');
@@ -540,7 +545,8 @@ System has 3 roles: Admin (full management), Instructor (quiz management + view 
       let ragContext = '';
       let sources = [];
       try {
-        const relevantChunks = await ragEngine.searchSimilar(message.trim(), 20);
+        const ragK = adminDataContext ? 4 : 20; // fewer RAG chunks when admin data is present
+        const relevantChunks = await ragEngine.searchSimilar(message.trim(), ragK);
         if (relevantChunks.length > 0) {
           ragContext = ragEngine.buildRAGContext(relevantChunks, lang);
           sources = ragEngine.buildSourcesList(relevantChunks);
@@ -603,8 +609,14 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
         { role: 'user', content: message.trim() },
       ];
 
+      const AI_CFG = {
+        groq:   { model: 'llama-3.3-70b-versatile', hostname: 'api.groq.com', path: '/openai/v1/chat/completions' },
+        gemini: { model: 'gemini-2.0-flash',        hostname: 'generativelanguage.googleapis.com', path: '/v1beta/openai/chat/completions' },
+        openai: { model: 'gpt-4o-mini',             hostname: 'api.openai.com', path: '/v1/chat/completions' },
+      };
+      const cfg = AI_CFG[provider];
       const payload = JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: cfg.model,
         messages: oaiMessages,
         max_tokens: 800,
         temperature: 0.5,
@@ -614,8 +626,8 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
         const https = require('https');
         let data = '';
         const req2 = https.request({
-          hostname: 'api.openai.com', port: 443,
-          path: '/v1/chat/completions', method: 'POST',
+          hostname: cfg.hostname, port: 443,
+          path: cfg.path, method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`,
@@ -626,12 +638,12 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
           r.on('end', () => {
             try {
               const p = JSON.parse(data);
-              if (p.error) reject(new Error(p.error.message || 'OpenAI error'));
+              if (p.error) reject(new Error(p.error.message || 'AI API error'));
               else resolve((p.choices?.[0]?.message?.content || '').trim());
             } catch(e) { reject(new Error('Parse error: ' + data.slice(0,100))); }
           });
         });
-        req2.setTimeout(25000, () => { req2.destroy(); reject(new Error('Timeout')); });
+        req2.setTimeout(30000, () => { req2.destroy(); reject(new Error('Timeout')); });
         req2.on('error', reject);
         req2.write(payload);
         req2.end();
