@@ -47,6 +47,10 @@ const PORT = process.env.PORT || 3001;
 const { connectDB } = require('./db');
 const { handleAuthRoute } = require('./routes/auth');
 const { handleQuizRoute } = require('./routes/quiz');
+const { handleAdminRoute } = require('./routes/admin');
+const { handleInstructorRoute } = require('./routes/instructor');
+const { seedAdmin } = require('./seed_admin');
+const { getUserFromReq } = require('./middleware/auth');
 
 // ═══════════════════════════════════════════════════════════════
 // RAG ENGINE — load on startup
@@ -287,6 +291,14 @@ const server = http.createServer(async (req, res) => {
       const handled = await handleAuthRoute(req, res, path);
       if (handled) return;
     }
+    if (path.startsWith('/api/admin/')) {
+      const handled = await handleAdminRoute(req, res, path, parsed);
+      if (handled) return;
+    }
+    if (path.startsWith('/api/instructor/')) {
+      const handled = await handleInstructorRoute(req, res, path, parsed);
+      if (handled) return;
+    }
     if (path.startsWith('/api/quiz/') || path.startsWith('/api/exam/') || path.startsWith('/api/cert/')) {
       const handled = await handleQuizRoute(req, res, path, parsed);
       if (handled) return;
@@ -433,6 +445,89 @@ const server = http.createServer(async (req, res) => {
       const currentPage = context.current_page || 'home';
       const isVi = lang === 'vi';
 
+      // ── Detect user role from token ────────────────────────────
+      const chatUserInfo = getUserFromReq(req);
+      const userRole = chatUserInfo ? chatUserInfo.role : 'student';
+
+      // ── Admin data context ─────────────────────────────────────
+      let adminDataContext = '';
+      if (userRole === 'admin') {
+        const adminKeywords = /người dùng|user|đăng ký|register|thống kê|statistic|tiến độ|progress|bao nhiêu|how many|tổng|total|học sinh|student|giảng viên|instructor|tài khoản|account|log|hoạt động|activity/i;
+        if (adminKeywords.test(message)) {
+          try {
+            const User_m = require('./models/User');
+            const QP = require('./models/QuizProgress');
+            const TA = require('./models/TestAttempt');
+            const Cert = require('./models/Certificate');
+            const AL = require('./models/ActivityLog');
+
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const weekStart = new Date(todayStart); weekStart.setDate(weekStart.getDate() - 7);
+
+            const [totalUsers, students, instructors, admins, regToday, regWeek,
+                   totalExams, passedExams, totalCerts, totalQuiz, correctQuiz,
+                   recentLogs] = await Promise.all([
+              User_m.countDocuments(),
+              User_m.countDocuments({ role: 'student' }),
+              User_m.countDocuments({ role: 'instructor' }),
+              User_m.countDocuments({ role: 'admin' }),
+              User_m.countDocuments({ createdAt: { $gte: todayStart } }),
+              User_m.countDocuments({ createdAt: { $gte: weekStart } }),
+              TA.countDocuments({ completedAt: { $ne: null } }),
+              TA.countDocuments({ passed: true }),
+              Cert.countDocuments(),
+              QP.countDocuments(),
+              QP.countDocuments({ correct: true }),
+              AL.find().sort({ createdAt: -1 }).limit(10).lean(),
+            ]);
+
+            const recentLogsStr = recentLogs.map(l => `- ${l.action} (${new Date(l.createdAt).toISOString().slice(0,16)})`).join('\n');
+
+            adminDataContext = isVi
+              ? `\n\nDỮ LIỆU HỆ THỐNG (chỉ admin mới thấy):
+- Tổng người dùng: ${totalUsers} (Học sinh: ${students}, Giảng viên: ${instructors}, Admin: ${admins})
+- Đăng ký hôm nay: ${regToday}, tuần này: ${regWeek}
+- Bài thi đã nộp: ${totalExams}, đậu: ${passedExams}
+- Chứng chỉ đã cấp: ${totalCerts}
+- Câu quiz đã trả lời: ${totalQuiz}, đúng: ${correctQuiz} (${totalQuiz > 0 ? Math.round(correctQuiz/totalQuiz*100) : 0}%)
+- 10 hoạt động gần nhất:\n${recentLogsStr}`
+              : `\n\nSYSTEM DATA (admin-only):
+- Total users: ${totalUsers} (Students: ${students}, Instructors: ${instructors}, Admins: ${admins})
+- Registered today: ${regToday}, this week: ${regWeek}
+- Exams submitted: ${totalExams}, passed: ${passedExams}
+- Certificates issued: ${totalCerts}
+- Quiz answers: ${totalQuiz}, correct: ${correctQuiz} (${totalQuiz > 0 ? Math.round(correctQuiz/totalQuiz*100) : 0}%)
+- 10 recent activities:\n${recentLogsStr}`;
+          } catch (adminErr) {
+            console.warn('[Chat] Admin data query failed:', adminErr.message);
+          }
+        }
+      }
+
+      // ── Web knowledge context ──────────────────────────────────
+      const webKnowledge = isVi
+        ? `\nVỀ WEBSITE BlockEdu Pro (HubBlock):
+Website giáo dục Blockchain tương tác gồm các tính năng:
+- Trang chủ (Home): Giới thiệu tổng quan, điểm nổi bật
+- Demo Hash (SHA-256): Nhập text → thấy hash realtime, minh họa thuật toán băm
+- Mining: Mô phỏng đào block realtime (nonce, difficulty, Proof of Work)
+- RSA Demo: Mã hóa/giải mã RSA, chữ ký số, tạo key pair
+- Quiz & Exam: Ôn tập trắc nghiệm theo chủ đề, thi thử 40 câu có thời gian, cấp chứng chỉ
+- Hồ sơ (Profile): Xem tiến độ học, lịch sử thi, chứng chỉ
+- AI Chatbot: Trợ lý AI học blockchain, được huấn luyện trên 14 tài liệu nghiên cứu
+Hệ thống có 3 vai trò: Admin (quản trị toàn bộ), Giảng viên (quản lý quiz + xem tiến độ học sinh), Học sinh (học + làm bài).`
+        : `\nABOUT BlockEdu Pro (HubBlock) WEBSITE:
+An interactive Blockchain education web app with features:
+- Home: Overview and highlights
+- Hash Demo (SHA-256): Type text → see hash in realtime, hash algorithm visualization
+- Mining: Realtime block mining simulation (nonce, difficulty, Proof of Work)
+- RSA Demo: RSA encrypt/decrypt, digital signatures, key pair generation
+- Quiz & Exam: Topic-based practice quizzes, 40-question timed exams, certificate issuance
+- Profile: View progress, exam history, certificates
+- AI Chatbot: AI learning assistant trained on 14 research documents
+System has 3 roles: Admin (full management), Instructor (quiz management + view student progress), Student (learn + take quizzes).`;
+
       // ── RAG: Retrieve relevant chunks ──────────────────────────
       let ragContext = '';
       let sources = [];
@@ -467,7 +562,7 @@ QUY TẮC QUAN TRỌNG:
 2. LUÔN trích dẫn nguồn ngay dước đoạn văn dựa theo đúng format ở phần TÀI LIỆU (KHÔNG DÙNG "Nguồn 1", "Nguồn 2", mà phải dùng trực tiếp Tên sách). Ví dụ: [Tên Sách, tr. X]
 3. TUYỆT ĐỐI KHÔNG dùng định dạng toán học LaTeX (như \\(, \\), \\[, \\]). Dùng text bình thường và các ký hiệu thông dụng (ví dụ: c = m^e mod n).
 4. Nếu thông tin không có trong tài liệu trên, hãy nói rõ: "Theo kiến thức chung..."
-5. Ưu tiên thông tin từ tài liệu hơn kiến thức nền.`
+5. Ưu tiên thông tin từ tài liệu hơn kiến thức nền.${webKnowledge}${adminDataContext}`
           : `You are BlockEdu Pro's AI Assistant — a blockchain education web app.
 Current page: "${currentPage}"
 You have been trained on the following 14 documents:
@@ -482,15 +577,15 @@ IMPORTANT RULES:
 2. ALWAYS cite sources in your answer using the exact format provided in DOCUMENTS (DO NOT use "Source 1", "Source 2", but use the Book Title directly). Example: [Book Title, p. X]
 3. DO NOT use LaTeX math formatting like \\( \\) or \\[ \\]. Use plain text and standard symbols (e.g. c = m^e mod n).
 4. If information is not in the documents above, clearly state: "Based on general knowledge..."
-5. Prioritize document information over general knowledge.`;
+5. Prioritize document information over general knowledge.${webKnowledge}${adminDataContext}`;
       } else {
         systemPrompt = isVi
           ? `Bạn là AI Assistant của BlockEdu Pro — ứng dụng web giáo dục Blockchain cho sinh viên.
 Trang hiện tại: "${currentPage}"
-Trả lời Tiếng Việt, thân thiện, ngắn gọn. Tập trung vào blockchain, mật mã học, hướng dẫn app.`
+Trả lời Tiếng Việt, thân thiện, ngắn gọn. Tập trung vào blockchain, mật mã học, hướng dẫn app.${webKnowledge}${adminDataContext}`
           : `You are BlockEdu Pro's AI Assistant — a blockchain education web app.
 Current page: "${currentPage}"
-Reply in English, friendly and concise. Focus on blockchain, cryptography, app guidance.`;
+Reply in English, friendly and concise. Focus on blockchain, cryptography, app guidance.${webKnowledge}${adminDataContext}`;
       }
 
       const history = Array.isArray(context.history) ? context.history : [];
@@ -567,9 +662,24 @@ function readBody(req) {
   });
 }
 
-// Connect to MongoDB before starting server
-connectDB().then(() => {
+// Connect to MongoDB before starting server, then seed admin
+connectDB().then(async (ok) => {
   console.log('[BlockEdu] Database module initialized.');
+  if (ok) {
+    await seedAdmin();
+    // Migrate JSON questions to DB if empty
+    const Question = require('./models/Question');
+    const count = await Question.countDocuments();
+    if (count === 0) {
+      try {
+        const qPath = require('path').join(__dirname, 'src', 'data', 'quiz_questions.json');
+        const qs = JSON.parse(require('fs').readFileSync(qPath, 'utf8'));
+        const docs = qs.map(q => ({ qid: q.id, topic: q.topic, difficulty: q.difficulty, question_vi: q.question_vi, question_en: q.question_en, options_vi: q.options_vi, options_en: q.options_en, correct: q.correct, explanation_vi: q.explanation_vi || '', explanation_en: q.explanation_en || '' }));
+        await Question.insertMany(docs);
+        console.log(`[BlockEdu] Migrated ${docs.length} questions to MongoDB.`);
+      } catch (e) { console.warn('[BlockEdu] Question migration skipped:', e.message); }
+    }
+  }
 }).catch(e => {
   console.warn('[BlockEdu] DB init warning:', e.message);
 });

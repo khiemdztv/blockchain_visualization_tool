@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext.jsx';
 
 // ─── i18n strings ──────────────────────────────────────────────
 const CHAT_I18N = {
@@ -180,6 +181,7 @@ function MessageBubble({ msg, lang }) {
 // ─── Main Chatbot Component ────────────────────────────────────
 export default function Chatbot({ lang = 'vi', currentPage = 'home' }) {
   const t = CHAT_I18N[lang] || CHAT_I18N.vi;
+  const { token, isAdmin } = useAuth();
 
   const makeWelcomeMsg = (strings) => ({
     id: 'welcome',
@@ -225,9 +227,11 @@ export default function Chatbot({ lang = 'vi', currentPage = 'home' }) {
     setShowSuggestions(false);
 
     try {
+      const fetchHeaders = { 'Content-Type': 'application/json' };
+      if (token) fetchHeaders['Authorization'] = `Bearer ${token}`;
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: fetchHeaders,
         body: JSON.stringify({
           message: trimmed,
           context: {
@@ -376,6 +380,16 @@ export default function Chatbot({ lang = 'vi', currentPage = 'home' }) {
                 {s}
               </button>
             ))}
+            {isAdmin && (
+              <>
+                <button className="cb-chip" onClick={() => handleSuggestion(lang === 'vi' ? 'Hiện có bao nhiêu người đăng ký?' : 'How many users are registered?')}>
+                  {lang === 'vi' ? '👥 Thống kê người dùng' : '👥 User stats'}
+                </button>
+                <button className="cb-chip" onClick={() => handleSuggestion(lang === 'vi' ? 'Tiến độ học sinh như thế nào?' : 'How is student progress?')}>
+                  {lang === 'vi' ? '📊 Tiến độ học sinh' : '📊 Student progress'}
+                </button>
+              </>
+            )}
           </div>
         )}
 

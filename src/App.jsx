@@ -10,6 +10,8 @@ import AboutTeamView from './views/AboutTeamView.jsx';
 import RSADemoView from './views/rsa/RSADemoView.jsx';
 import QuizView from './views/QuizView.jsx';
 import ProfileView from './views/ProfileView.jsx';
+import AdminView from './views/AdminView.jsx';
+import InstructorView from './views/InstructorView.jsx';
 import ParticleBackground from './components/ParticleBackground.jsx';
 import Chatbot from './components/Chatbot.jsx';
 import LoginModal from './components/LoginModal.jsx';
@@ -42,7 +44,7 @@ function AppInner() {
   const [theme, setTheme] = useState("dark");
   const [loginOpen, setLoginOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin, isInstructor } = useAuth();
 
   const t = LANG[lang];
   const TABS = [
@@ -53,6 +55,8 @@ function AppInner() {
     { id: "quiz",   label: t.nav.quiz || 'Quiz' },
     { id: "about",  label: t.nav.about },
     { id: "team",   label: t.nav.team },
+    ...(isAdmin ? [{ id: "admin", label: lang === 'vi' ? 'Quản trị' : 'Admin' }] : []),
+    ...(isInstructor ? [{ id: "instructor", label: lang === 'vi' ? 'Quản lý' : 'Manage' }] : []),
   ];
 
   useEffect(() => {
@@ -159,6 +163,8 @@ function AppInner() {
       {tab === "about"   && <AboutProjectView lang={lang} />}
       {tab === "team"    && <AboutTeamView lang={lang} />}
       {tab === "profile" && user && <ProfileView lang={lang} />}
+      {tab === "admin" && isAdmin && <AdminView lang={lang} />}
+      {tab === "instructor" && isInstructor && <InstructorView lang={lang} />}
 
       {/* Footer */}
       <Footer lang={lang} />

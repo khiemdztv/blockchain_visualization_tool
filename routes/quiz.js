@@ -5,6 +5,7 @@ const TestAttempt = require('../models/TestAttempt');
 const Certificate = require('../models/Certificate');
 const User = require('../models/User');
 const { getUserFromReq } = require('../middleware/auth');
+const { logActivity } = require('../utils/activityLogger');
 
 // Load questions once
 let ALL_QUESTIONS = [];
@@ -71,8 +72,9 @@ async function handleQuizRoute(req, res, path, parsed) {
   // ── POST /api/quiz/progress ──────────────────────────────
   // Save practice progress (requires auth)
   if (path === '/api/quiz/progress' && req.method === 'POST') {
-    const userId = getUserFromReq(req);
-    if (!userId) return json(res, { error: 'Authentication required' }, 401), true;
+    const userInfo = getUserFromReq(req);
+    if (!userInfo) return json(res, { error: 'Authentication required' }, 401), true;
+    const userId = userInfo.id;
 
     const { questionId, selectedAnswer, correct, topic, difficulty } = await readBody(req);
     if (!questionId || selectedAnswer === undefined || correct === undefined) {
@@ -84,14 +86,16 @@ async function handleQuizRoute(req, res, path, parsed) {
       { userId, questionId, selectedAnswer, correct, topic, difficulty, answeredAt: new Date() },
       { upsert: true, new: true }
     );
+    logActivity(userId, 'quiz_answer', { questionId, correct, topic, difficulty }, req);
     json(res, { success: true });
     return true;
   }
 
   // ── GET /api/quiz/progress ───────────────────────────────
   if (path === '/api/quiz/progress' && req.method === 'GET') {
-    const userId = getUserFromReq(req);
-    if (!userId) return json(res, { error: 'Authentication required' }, 401), true;
+    const userInfo = getUserFromReq(req);
+    if (!userInfo) return json(res, { error: 'Authentication required' }, 401), true;
+    const userId = userInfo.id;
 
     const progress = await QuizProgress.find({ userId }).lean();
     const stats = {
@@ -116,8 +120,9 @@ async function handleQuizRoute(req, res, path, parsed) {
   // ── POST /api/exam/start ─────────────────────────────────
   // Start a new exam: pick 40 random questions
   if (path === '/api/exam/start' && req.method === 'POST') {
-    const userId = getUserFromReq(req);
-    if (!userId) return json(res, { error: 'Authentication required' }, 401), true;
+    const userInfo = getUserFromReq(req);
+    if (!userInfo) return json(res, { error: 'Authentication required' }, 401), true;
+    const userId = userInfo.id;
 
     // Distribution: 16 easy, 16 medium, 8 hard
     const easy = shuffle(ALL_QUESTIONS.filter(q => q.difficulty === 'easy')).slice(0, 16);
@@ -142,14 +147,16 @@ async function handleQuizRoute(req, res, path, parsed) {
       options_en: q.options_en,
     }));
 
+    logActivity(userId, 'exam_start', { attemptId: attempt._id }, req);
     json(res, { attemptId: attempt._id, questions: safeQuestions, startedAt: attempt.startedAt, timeLimit: 3600 });
     return true;
   }
 
   // ── POST /api/exam/submit ────────────────────────────────
   if (path === '/api/exam/submit' && req.method === 'POST') {
-    const userId = getUserFromReq(req);
-    if (!userId) return json(res, { error: 'Authentication required' }, 401), true;
+    const userInfo = getUserFromReq(req);
+    if (!userInfo) return json(res, { error: 'Authentication required' }, 401), true;
+    const userId = userInfo.id;
 
     const { attemptId, answers } = await readBody(req);
     if (!attemptId || !answers) {
@@ -218,6 +225,7 @@ async function handleQuizRoute(req, res, path, parsed) {
       };
     });
 
+    logActivity(userId, 'exam_submit', { attemptId: attempt._id, score, passed: attempt.passed }, req);
     json(res, {
       score,
       totalQuestions: 40,
@@ -230,8 +238,9 @@ async function handleQuizRoute(req, res, path, parsed) {
 
   // ── GET /api/exam/history ────────────────────────────────
   if (path === '/api/exam/history' && req.method === 'GET') {
-    const userId = getUserFromReq(req);
-    if (!userId) return json(res, { error: 'Authentication required' }, 401), true;
+    const userInfo = getUserFromReq(req);
+    if (!userInfo) return json(res, { error: 'Authentication required' }, 401), true;
+    const userId = userInfo.id;
 
     const attempts = await TestAttempt.find({ userId }).sort({ startedAt: -1 }).lean();
     json(res, {
@@ -249,8 +258,9 @@ async function handleQuizRoute(req, res, path, parsed) {
 
   // ── GET /api/cert/my ─────────────────────────────────────
   if (path === '/api/cert/my' && req.method === 'GET') {
-    const userId = getUserFromReq(req);
-    if (!userId) return json(res, { error: 'Authentication required' }, 401), true;
+    const userInfo = getUserFromReq(req);
+    if (!userInfo) return json(res, { error: 'Authentication required' }, 401), true;
+    const userId = userInfo.id;
 
     const certs = await Certificate.find({ userId }).sort({ issuedAt: -1 }).lean();
     json(res, { certificates: certs });

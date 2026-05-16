@@ -69,7 +69,11 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const value = { user, token, loading, login, register, loginWithGoogle, logout };
+  const isAdmin = user?.role === 'admin';
+  const isInstructor = user?.role === 'instructor';
+  const isStudent = !user || user?.role === 'student';
+
+  const value = { user, token, loading, login, register, loginWithGoogle, logout, isAdmin, isInstructor, isStudent };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

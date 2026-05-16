@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const https = require('https');
 const User = require('../models/User');
 const { signToken, getUserFromReq } = require('../middleware/auth');
+const { logActivity } = require('../utils/activityLogger');
 
 // Helper: read request body as JSON
 function readBody(req) {
@@ -67,10 +68,11 @@ async function handleAuthRoute(req, res, path) {
       displayName: displayName.trim(),
       authProvider: 'local',
     });
-    const token = signToken(user._id);
+    const token = signToken(user._id, user.role || 'student');
+    logActivity(user._id, 'register', { authProvider: 'local' }, req);
     json(res, {
       token,
-      user: { id: user._id, email: user.email, displayName: user.displayName, avatar: user.avatar, authProvider: user.authProvider },
+      user: { id: user._id, email: user.email, displayName: user.displayName, avatar: user.avatar, authProvider: user.authProvider, role: user.role || 'student' },
     });
     return true;
   }
@@ -89,10 +91,11 @@ async function handleAuthRoute(req, res, path) {
     if (!match) {
       return json(res, { error: 'Invalid email or password' }, 401), true;
     }
-    const token = signToken(user._id);
+    const token = signToken(user._id, user.role || 'student');
+    logActivity(user._id, 'login', { authProvider: 'local' }, req);
     json(res, {
       token,
-      user: { id: user._id, email: user.email, displayName: user.displayName, avatar: user.avatar, authProvider: user.authProvider },
+      user: { id: user._id, email: user.email, displayName: user.displayName, avatar: user.avatar, authProvider: user.authProvider, role: user.role || 'student' },
     });
     return true;
   }
@@ -128,26 +131,27 @@ async function handleAuthRoute(req, res, path) {
         googleId: info.googleId,
       });
     }
-    const token = signToken(user._id);
+    const token = signToken(user._id, user.role || 'student');
+    logActivity(user._id, 'login', { authProvider: 'google' }, req);
     json(res, {
       token,
-      user: { id: user._id, email: user.email, displayName: user.displayName, avatar: user.avatar, authProvider: user.authProvider },
+      user: { id: user._id, email: user.email, displayName: user.displayName, avatar: user.avatar, authProvider: user.authProvider, role: user.role || 'student' },
     });
     return true;
   }
 
   // ── GET /api/auth/me ─────────────────────────────────────
   if (path === '/api/auth/me' && req.method === 'GET') {
-    const userId = getUserFromReq(req);
-    if (!userId) {
+    const userInfo = getUserFromReq(req);
+    if (!userInfo) {
       return json(res, { error: 'Not authenticated' }, 401), true;
     }
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findById(userInfo.id).select('-password');
     if (!user) {
       return json(res, { error: 'User not found' }, 404), true;
     }
     json(res, {
-      user: { id: user._id, email: user.email, displayName: user.displayName, avatar: user.avatar, authProvider: user.authProvider, createdAt: user.createdAt },
+      user: { id: user._id, email: user.email, displayName: user.displayName, avatar: user.avatar, authProvider: user.authProvider, role: user.role || 'student', createdAt: user.createdAt },
     });
     return true;
   }
