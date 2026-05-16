@@ -256,11 +256,19 @@ const server = http.createServer(async (req, res) => {
     // ── Serve static files (Vite output: dist/) ───────────────
     if (req.method === 'GET' && !path.startsWith('/api/')) {
       let reqPath = path === '/' ? '/index.html' : path;
+      // Prefer Vite build output (dist/). If an asset isn't present there
+      // (e.g. fresh asset added under public/ but dist not rebuilt in some environments),
+      // fall back to public/ before SPA index.html.
       let filePath = path_m.join(__dirname, 'dist', reqPath);
       
-      // Fallback for React Router / SPA
       if (!fs.existsSync(filePath)) {
-        filePath = path_m.join(__dirname, 'dist', 'index.html');
+        const publicPath = path_m.join(__dirname, 'public', reqPath);
+        if (fs.existsSync(publicPath)) {
+          filePath = publicPath;
+        } else {
+          // Fallback for React Router / SPA
+          filePath = path_m.join(__dirname, 'dist', 'index.html');
+        }
       }
 
       if (fs.existsSync(filePath)) {
