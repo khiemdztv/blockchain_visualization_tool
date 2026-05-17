@@ -6,7 +6,7 @@ Built for the **Student Scientific Research Competition (SVNCKH 2025)** at Ho Ch
 
 > 🌐 **Live Demo:** [hubblock.onrender.com](https://hubblock.onrender.com)
 
----
+--
 
 ## Overview
 
