@@ -609,45 +609,81 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
         { role: 'user', content: message.trim() },
       ];
 
+      // Groq model fallback chain (best → smallest, ordered by quality)
+      const GROQ_MODELS = [
+        'llama-3.3-70b-versatile',
+        'meta-llama/llama-4-scout-17b-16e-instruct',
+        'qwen/qwen3-32b',
+        'llama-3.1-8b-instant',
+      ];
+
       const AI_CFG = {
-        groq:   { model: 'llama-3.3-70b-versatile', hostname: 'api.groq.com', path: '/openai/v1/chat/completions' },
-        gemini: { model: 'gemini-2.0-flash',        hostname: 'generativelanguage.googleapis.com', path: '/v1beta/openai/chat/completions' },
-        openai: { model: 'gpt-4o-mini',             hostname: 'api.openai.com', path: '/v1/chat/completions' },
+        groq:   { models: GROQ_MODELS, hostname: 'api.groq.com',                    path: '/openai/v1/chat/completions' },
+        gemini: { models: ['gemini-2.0-flash'],  hostname: 'generativelanguage.googleapis.com', path: '/v1beta/openai/chat/completions' },
+        openai: { models: ['gpt-4o-mini'],       hostname: 'api.openai.com',                    path: '/v1/chat/completions' },
       };
       const cfg = AI_CFG[provider];
-      const payload = JSON.stringify({
-        model: cfg.model,
-        messages: oaiMessages,
-        max_tokens: 800,
-        temperature: 0.5,
-      });
 
-      const reply = await new Promise((resolve, reject) => {
-        const https = require('https');
-        let data = '';
-        const req2 = https.request({
-          hostname: cfg.hostname, port: 443,
-          path: cfg.path, method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Length': Buffer.byteLength(payload),
-          },
-        }, (r) => {
-          r.on('data', c => data += c);
-          r.on('end', () => {
-            try {
-              const p = JSON.parse(data);
-              if (p.error) reject(new Error(p.error.message || 'AI API error'));
-              else resolve((p.choices?.[0]?.message?.content || '').trim());
-            } catch(e) { reject(new Error('Parse error: ' + data.slice(0,100))); }
+      // Helper: call one model
+      function callModel(modelName) {
+        return new Promise((resolve, reject) => {
+          const https = require('https');
+          const payload = JSON.stringify({
+            model: modelName,
+            messages: oaiMessages,
+            max_tokens: 800,
+            temperature: 0.5,
           });
+          let data = '';
+          const req2 = https.request({
+            hostname: cfg.hostname, port: 443,
+            path: cfg.path, method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Length': Buffer.byteLength(payload),
+            },
+          }, (r) => {
+            r.on('data', c => data += c);
+            r.on('end', () => {
+              try {
+                const p = JSON.parse(data);
+                if (p.error) {
+                  const err = new Error(p.error.message || 'AI API error');
+                  err.statusCode = r.statusCode;
+                  reject(err);
+                } else {
+                  resolve({ content: (p.choices?.[0]?.message?.content || '').trim(), model: modelName });
+                }
+              } catch(e) { reject(new Error('Parse error: ' + data.slice(0,100))); }
+            });
+          });
+          req2.setTimeout(30000, () => { req2.destroy(); reject(new Error('Timeout')); });
+          req2.on('error', reject);
+          req2.write(payload);
+          req2.end();
         });
-        req2.setTimeout(30000, () => { req2.destroy(); reject(new Error('Timeout')); });
-        req2.on('error', reject);
-        req2.write(payload);
-        req2.end();
-      });
+      }
+
+      // Try models in order, fallback on rate limit (429) or quota errors
+      let reply = '';
+      let usedModel = cfg.models[0];
+      for (const modelName of cfg.models) {
+        try {
+          const result = await callModel(modelName);
+          reply = result.content;
+          usedModel = result.model;
+          break;
+        } catch (err) {
+          const isRateLimit = err.statusCode === 429 || /rate.limit|quota|limit|too many/i.test(err.message);
+          if (isRateLimit && modelName !== cfg.models[cfg.models.length - 1]) {
+            console.warn(`[Chat] ${modelName} rate-limited, trying next model...`);
+            continue;
+          }
+          throw err;
+        }
+      }
+      console.log(`[Chat] Used model: ${usedModel}`);
 
       json(res, { reply, sources });
 
