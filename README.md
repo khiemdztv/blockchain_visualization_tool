@@ -337,7 +337,7 @@ Developed by students of the **Faculty of Data Science in Business** at Ho Chi M
 
 **Contact**
 - Email: vtkteam2005@gmail.com
-- Supervisor: nguyenhoaduc@hub.edu.vn
+- Supervisor: ducnh@hub.edu.vn
 
 ---
 
