@@ -9,7 +9,7 @@ let connected = false;
 async function connectDB() {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
-    console.warn('[BlockEdu] MONGODB_URI not set — quiz/auth features disabled.');
+    console.warn('[HubBlock] MONGODB_URI not set — quiz/auth features disabled.');
     return false;
   }
   try {
@@ -18,10 +18,10 @@ async function connectDB() {
       connectTimeoutMS: 10000,
     });
     connected = true;
-    console.log('[BlockEdu] MongoDB connected successfully.');
+    console.log('[HubBlock] MongoDB connected successfully.');
     return true;
   } catch (err) {
-    console.error('[BlockEdu] MongoDB connection failed:', err.message);
+    console.error('[HubBlock] MongoDB connection failed:', err.message);
     return false;
   }
 }

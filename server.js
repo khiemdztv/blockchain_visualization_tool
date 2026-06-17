@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * BlockEdu — Node.js Blockchain Core + Gateway
+ * HubBlock — Node.js Blockchain Core + Gateway
  * Pure Node.js built-ins only (http, crypto, net)
  * Architecture mirrors the Java core spec.
  * 
@@ -31,12 +31,12 @@ try {
       const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
       if (key && !process.env[key]) process.env[key] = val;
     }
-    console.log('[BlockEdu] .env loaded successfully.');
+    console.log('[HubBlock] .env loaded successfully.');
   } else {
-    console.warn('[BlockEdu] No .env file found — create one with MONGODB_URI, JWT_SECRET, etc.');
+    console.warn('[HubBlock] No .env file found — create one with MONGODB_URI, JWT_SECRET, etc.');
   }
 } catch (envErr) {
-  console.warn('[BlockEdu] Could not read .env:', envErr.message);
+  console.warn('[HubBlock] Could not read .env:', envErr.message);
 }
 
 const PORT = process.env.PORT || 3001;
@@ -57,9 +57,9 @@ const { getUserFromReq } = require('./middleware/auth');
 // ═══════════════════════════════════════════════════════════════
 const ragEngine = require('./rag_engine');
 ragEngine.init().then(() => {
-  console.log('[BlockEdu] RAG engine initialized.');
+  console.log('[HubBlock] RAG engine initialized.');
 }).catch(e => {
-  console.warn('[BlockEdu] RAG engine init failed (chatbot will use base mode):', e.message);
+  console.warn('[HubBlock] RAG engine init failed (chatbot will use base mode):', e.message);
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -161,7 +161,7 @@ class Blockchain {
   constructor(difficulty = 3) {
     this.difficulty = difficulty;
     this.chain = [];
-    const genesis = new Block(0, 'Genesis Block — BlockEdu Educational Chain',
+    const genesis = new Block(0, 'Genesis Block — HubBlock Educational Chain',
       '0000000000000000000000000000000000000000000000000000000000000000');
     genesis.addTransaction('System: Chain initialized at ' + new Date().toISOString());
     this.chain.push(genesis);
@@ -520,7 +520,7 @@ const server = http.createServer(async (req, res) => {
 
       // ── Web knowledge context ──────────────────────────────────
       const webKnowledge = isVi
-        ? `\nVỀ WEBSITE BlockEdu Pro (HubBlock):
+        ? `\nVỀ WEBSITE HubBlock:
 Website giáo dục Blockchain tương tác gồm các tính năng:
 - Trang chủ (Home): Giới thiệu tổng quan, điểm nổi bật
 - Demo Hash (SHA-256): Nhập text → thấy hash realtime, minh họa thuật toán băm
@@ -530,7 +530,7 @@ Website giáo dục Blockchain tương tác gồm các tính năng:
 - Hồ sơ (Profile): Xem tiến độ học, lịch sử thi, chứng chỉ
 - AI Chatbot: Trợ lý AI học blockchain, được huấn luyện trên 14 tài liệu nghiên cứu
 Hệ thống có 3 vai trò: Admin (quản trị toàn bộ), Giảng viên (quản lý quiz + xem tiến độ học sinh), Học sinh (học + làm bài).`
-        : `\nABOUT BlockEdu Pro (HubBlock) WEBSITE:
+        : `\nABOUT HubBlock WEBSITE:
 An interactive Blockchain education web app with features:
 - Home: Overview and highlights
 - Hash Demo (SHA-256): Type text → see hash in realtime, hash algorithm visualization
@@ -562,7 +562,7 @@ System has 3 roles: Admin (full management), Instructor (quiz management + view 
       let systemPrompt;
       if (ragContext) {
         systemPrompt = isVi
-          ? `Bạn là AI Assistant của BlockEdu Pro — ứng dụng giáo dục Blockchain.
+          ? `Bạn là AI Assistant của HubBlock — ứng dụng giáo dục Blockchain.
 Trang hiện tại: "${currentPage}"
 Bạn đã được huấn luyện sẵn trên 14 bộ tài liệu sau: 
 - ${allBooks}
@@ -577,7 +577,7 @@ QUY TẮC QUAN TRỌNG:
 3. TUYỆT ĐỐI KHÔNG dùng định dạng toán học LaTeX (như \\(, \\), \\[, \\]). Dùng text bình thường và các ký hiệu thông dụng (ví dụ: c = m^e mod n).
 4. Nếu thông tin không có trong tài liệu trên, hãy nói rõ: "Theo kiến thức chung..."
 5. Ưu tiên thông tin từ tài liệu hơn kiến thức nền.${webKnowledge}${adminDataContext}`
-          : `You are BlockEdu Pro's AI Assistant — a blockchain education web app.
+          : `You are HubBlock's AI Assistant — a blockchain education web app.
 Current page: "${currentPage}"
 You have been trained on the following 14 documents:
 - ${allBooks}
@@ -594,10 +594,10 @@ IMPORTANT RULES:
 5. Prioritize document information over general knowledge.${webKnowledge}${adminDataContext}`;
       } else {
         systemPrompt = isVi
-          ? `Bạn là AI Assistant của BlockEdu Pro — ứng dụng web giáo dục Blockchain cho sinh viên.
+          ? `Bạn là AI Assistant của HubBlock — ứng dụng web giáo dục Blockchain cho sinh viên.
 Trang hiện tại: "${currentPage}"
 Trả lời Tiếng Việt, thân thiện, ngắn gọn. Tập trung vào blockchain, mật mã học, hướng dẫn app.${webKnowledge}${adminDataContext}`
-          : `You are BlockEdu Pro's AI Assistant — a blockchain education web app.
+          : `You are HubBlock's AI Assistant — a blockchain education web app.
 Current page: "${currentPage}"
 Reply in English, friendly and concise. Focus on blockchain, cryptography, app guidance.${webKnowledge}${adminDataContext}`;
       }
@@ -720,7 +720,7 @@ function readBody(req) {
 
 // Connect to MongoDB before starting server, then seed admin
 connectDB().then(async (ok) => {
-  console.log('[BlockEdu] Database module initialized.');
+  console.log('[HubBlock] Database module initialized.');
   if (ok) {
     await seedAdmin();
     // Migrate JSON questions to DB if empty
@@ -732,16 +732,16 @@ connectDB().then(async (ok) => {
         const qs = JSON.parse(require('fs').readFileSync(qPath, 'utf8'));
         const docs = qs.map(q => ({ qid: q.id, topic: q.topic, difficulty: q.difficulty, question_vi: q.question_vi, question_en: q.question_en, options_vi: q.options_vi, options_en: q.options_en, correct: q.correct, explanation_vi: q.explanation_vi || '', explanation_en: q.explanation_en || '' }));
         await Question.insertMany(docs);
-        console.log(`[BlockEdu] Migrated ${docs.length} questions to MongoDB.`);
-      } catch (e) { console.warn('[BlockEdu] Question migration skipped:', e.message); }
+        console.log(`[HubBlock] Migrated ${docs.length} questions to MongoDB.`);
+      } catch (e) { console.warn('[HubBlock] Question migration skipped:', e.message); }
     }
   }
 }).catch(e => {
-  console.warn('[BlockEdu] DB init warning:', e.message);
+  console.warn('[HubBlock] DB init warning:', e.message);
 });
 
 server.listen(PORT, () => {
-  console.log(`[BlockEdu] Node.js Gateway + Core running on http://localhost:${PORT}`);
-  console.log(`[BlockEdu] API: /api/chain | /api/block/add | /api/mine/stream | /api/merkle`);
-  console.log(`[BlockEdu] Chain initialized: difficulty=${blockchain.difficulty}, blocks=${blockchain.chain.length}`);
+  console.log(`[HubBlock] Node.js Gateway + Core running on http://localhost:${PORT}`);
+  console.log(`[HubBlock] API: /api/chain | /api/block/add | /api/mine/stream | /api/merkle`);
+  console.log(`[HubBlock] Chain initialized: difficulty=${blockchain.difficulty}, blocks=${blockchain.chain.length}`);
 });

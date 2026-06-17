@@ -1,7 +1,7 @@
 {
-  "name": "blockedupro",
+  "name": "hubblock",
   "version": "1.0.0",
-  "description": "BlockEdu Pro - Full-Stack Blockchain Visualizer",
+  "description": "HubBlock - Full-Stack Blockchain Visualizer",
   "main": "server.js",
   "scripts": {
     "dev": "concurrently \"node server.js\" \"vite\"",

@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * rag_engine.js — RAG Search Engine for BlockEdu Pro
+ * rag_engine.js — RAG Search Engine for HubBlock
  *
  * Loads the pre-built rag_index.json (created by rag_ingest.js)
  * and provides cosine-similarity search over document embeddings.

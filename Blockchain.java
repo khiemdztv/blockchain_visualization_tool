@@ -17,7 +17,7 @@ public class Blockchain {
     }
 
     private Block createGenesis() {
-        Block b = new Block(0, "Genesis Block — BlockEdu Educational Chain", "0000000000000000000000000000000000000000000000000000000000000000");
+        Block b = new Block(0, "Genesis Block — HubBlock Educational Chain", "0000000000000000000000000000000000000000000000000000000000000000");
         b.addTransaction("System: Chain initialized");
         return b;
     }

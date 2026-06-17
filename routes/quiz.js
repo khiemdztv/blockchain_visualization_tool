@@ -12,9 +12,9 @@ let ALL_QUESTIONS = [];
 try {
   const qPath = path_m.join(__dirname, '..', 'src', 'data', 'quiz_questions.json');
   ALL_QUESTIONS = JSON.parse(fs.readFileSync(qPath, 'utf8'));
-  console.log(`[BlockEdu] Loaded ${ALL_QUESTIONS.length} quiz questions.`);
+  console.log(`[HubBlock] Loaded ${ALL_QUESTIONS.length} quiz questions.`);
 } catch (e) {
-  console.warn('[BlockEdu] Could not load quiz_questions.json:', e.message);
+  console.warn('[HubBlock] Could not load quiz_questions.json:', e.message);
 }
 
 function readBody(req) {

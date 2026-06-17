@@ -5,20 +5,20 @@ async function seedAdmin() {
   try {
     const existing = await User.findOne({ role: 'admin' });
     if (existing) {
-      console.log('[BlockEdu] Admin account already exists:', existing.email);
+      console.log('[HubBlock] Admin account already exists:', existing.email);
       return;
     }
     const hashed = await bcrypt.hash('Admin123@', 10);
     await User.create({
-      email: 'admin@blockedu.local',
+      email: 'admin@hubblock.local',
       password: hashed,
       displayName: 'Admin',
       role: 'admin',
       authProvider: 'local',
     });
-    console.log('[BlockEdu] Admin account created: admin@blockedu.local / Admin123@');
+    console.log('[HubBlock] Admin account created: admin@hubblock.local / Admin123@');
   } catch (err) {
-    console.error('[BlockEdu] Seed admin error:', err.message);
+    console.error('[HubBlock] Seed admin error:', err.message);
   }
 }
 

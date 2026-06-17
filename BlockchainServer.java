@@ -39,8 +39,8 @@ public class BlockchainServer {
 
         server.setExecutor(executor);
         server.start();
-        System.out.println("[BlockEdu] Java Core running on port " + port);
-        System.out.println("[BlockEdu] Blockchain initialized with difficulty=" + blockchain.getDifficulty());
+        System.out.println("[HubBlock] Java Core running on port " + port);
+        System.out.println("[HubBlock] Blockchain initialized with difficulty=" + blockchain.getDifficulty());
     }
 
     // ── GET /api/chain ─────────────────────────────────────────────────────

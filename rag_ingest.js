@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * rag_ingest.js — PDF Ingestion Script for BlockEdu Pro RAG
+ * rag_ingest.js — PDF Ingestion Script for HubBlock RAG
  *
  * Run ONCE to process all 14 PDFs and create rag_index.json
  * Usage: node rag_ingest.js
@@ -241,7 +241,7 @@ async function processPDF(filename) {
 
 // ─── Main ingestion ───────────────────────────────────────────────
 async function main() {
-  console.log('🚀 BlockEdu Pro — RAG Ingestion Script');
+  console.log('🚀 HubBlock — RAG Ingestion Script');
   console.log('='.repeat(50));
 
   if (!API_KEY) {

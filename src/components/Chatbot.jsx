@@ -1,5 +1,5 @@
 /**
- * Chatbot.jsx — AI Chatbot Component for BlockEdu Pro
+ * Chatbot.jsx — AI Chatbot Component for HubBlock
  * 
  * Features:
  * - Floating button (fixed bottom-right) with pulse animation
@@ -27,7 +27,7 @@ const CHAT_I18N = {
     clear: 'Xoá chat',
     error: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.',
     errorKey: 'Chưa cấu hình OpenAI API key. Vui lòng thêm OPENAI_API_KEY vào file .env.',
-    welcome: 'Xin chào! 👋 Tôi là AI Assistant của BlockEdu Pro.\nTôi được học từ 14 tài liệu nghiên cứu về Blockchain!\nBạn có thể hỏi tôi về:\n• Bitcoin, Blockchain, Hash, Merkle Tree\n• Mật mã học, RSA, SHA-256\n• Timestamping, Proof of Work\n• Bất cứ điều gì bạn thắc mắc!',
+    welcome: 'Xin chào! 👋 Tôi là AI Assistant của HubBlock.\nTôi được học từ 14 tài liệu nghiên cứu về Blockchain!\nBạn có thể hỏi tôi về:\n• Bitcoin, Blockchain, Hash, Merkle Tree\n• Mật mã học, RSA, SHA-256\n• Timestamping, Proof of Work\n• Bất cứ điều gì bạn thắc mắc!',
     suggestions: [
       '⛓ Blockchain là gì?',
       '🔒 Hash SHA-256 hoạt động ra sao?',
@@ -47,7 +47,7 @@ const CHAT_I18N = {
     clear: 'Clear chat',
     error: 'Sorry, something went wrong. Please try again.',
     errorKey: 'OpenAI API key not configured. Please add OPENAI_API_KEY to your .env file.',
-    welcome: 'Hello! 👋 I am BlockEdu Pro\'s AI Assistant.\nI have studied 14 research documents on Blockchain!\nFeel free to ask me about:\n• Bitcoin, Blockchain, Hash, Merkle Tree\n• Cryptography, RSA, SHA-256\n• Timestamping, Proof of Work\n• Anything you\'re curious about!',
+    welcome: 'Hello! 👋 I am HubBlock\'s AI Assistant.\nI have studied 14 research documents on Blockchain!\nFeel free to ask me about:\n• Bitcoin, Blockchain, Hash, Merkle Tree\n• Cryptography, RSA, SHA-256\n• Timestamping, Proof of Work\n• Anything you\'re curious about!',
     suggestions: [
       '⛓ What is Blockchain?',
       '🔒 How does SHA-256 work?',
@@ -61,7 +61,7 @@ const CHAT_I18N = {
 };
 
 // ─── Helpers ───────────────────────────────────────────────────
-const STORAGE_KEY = 'blockedu_chat_history';
+const STORAGE_KEY = 'hubblock_chat_history';
 const MAX_HISTORY = 50;
 
 function loadHistory() {
