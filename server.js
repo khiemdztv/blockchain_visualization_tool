@@ -405,7 +405,52 @@ const server = http.createServer(async (req, res) => {
     // ── POST /api/difficulty ──────────────────────────────────
     } else if (path === '/api/difficulty' && req.method === 'POST') {
       const { difficulty } = await readBody(req);
-        // ── Detect user role from token ────────────────────────────
+      const bc = getBlockchainForReq(req);
+      bc.difficulty = Math.max(1, Math.min(5, parseInt(difficulty)));
+      json(res, { difficulty: bc.difficulty });
+
+    // ── POST /api/reset ───────────────────────────────────────
+    } else if (path === '/api/reset' && req.method === 'POST') {
+      const bc = getBlockchainForReq(req);
+      const diff = bc.difficulty;
+      const clientId = req.headers['x-client-id'] || 'default';
+      const newBc = new Blockchain(diff);
+      blockchains.set(clientId, newBc);
+      json(res, { success: true, chain: newBc.toJSON() });
+
+    // ── GET /api/validate ─────────────────────────────────────
+    } else if (path === '/api/validate' && req.method === 'GET') {
+      const bc = getBlockchainForReq(req);
+      json(res, {
+        valid: bc.isChainValid(),
+        blockValidities: bc.getBlockValidities()
+      });
+
+    // ── POST /api/chat ────────────────────────────────────────
+    // AI chatbot endpoint — RAG-powered, proxies to Google Gemini / Groq / OpenAI
+    } else if (path === '/api/chat' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { message = '', context = {} } = body;
+
+      if (!message.trim()) { json(res, { error: 'message is required' }, 400); return; }
+      if (message.length > 2000) { json(res, { error: 'message too long' }, 400); return; }
+
+      // Priority: Groq > Gemini > OpenAI
+      const groqKey = (process.env.GROQ_API_KEY || '').trim();
+      const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+      const openaiKey = (process.env.OPENAI_API_KEY || '').trim();
+      const provider = groqKey ? 'groq' : geminiKey ? 'gemini' : openaiKey ? 'openai' : null;
+      const apiKey = groqKey || geminiKey || openaiKey;
+      if (!provider) {
+        json(res, { error: 'AI API key not configured. Add GROQ_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY to .env' }, 503);
+        return;
+      }
+
+      const lang = (context.lang || 'vi').toLowerCase();
+      const currentPage = context.current_page || 'home';
+      const isVi = lang === 'vi';
+
+      // ── Detect user role from token ────────────────────────────
       const chatUserInfo = getUserFromReq(req);
       const userRole = chatUserInfo ? chatUserInfo.role : 'student';
       console.log(`[Chat] Detected user role: ${userRole}`);
@@ -413,56 +458,110 @@ const server = http.createServer(async (req, res) => {
       // ── Admin/Instructor data context ──────────────────────────
       let adminDataContext = '';
       if (userRole === 'admin' || userRole === 'instructor') {
-        const adminKeywords = /nguoi dung|người dùng|user|dang ky|đăng ký|register|thong ke|thống kê|statistic|tien do|tiến độ|progress|bao nhieu|bao nhiêu|how many|tong|tổng|total|hoc sinh|học sinh|student|giang vien|giảng viên|instructor|tai khoan|tài khoản|account|log|hoat dong|hoạt động|activity|quiz|exam|chung chi|chứng chỉ|certificate/i;
-        if (adminKeywords.test(message)) {
-          try {
-            const User_m = require('./models/User');
-            const QP = require('./models/QuizProgress');
-            const TA = require('./models/TestAttempt');
-            const Cert = require('./models/Certificate');
-            const AL = require('./models/ActivityLog');
+        try {
+          const User_m = require('./models/User');
+          const QP = require('./models/QuizProgress');
+          const TA = require('./models/TestAttempt');
+          const Cert = require('./models/Certificate');
+          const AL = require('./models/ActivityLog');
 
-            const now = new Date();
-            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const weekStart = new Date(todayStart); weekStart.setDate(weekStart.getDate() - 7);
+          const now = new Date();
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const weekStart = new Date(todayStart); weekStart.setDate(weekStart.getDate() - 7);
 
-            const [totalUsers, students, instructors, admins, regToday, regWeek,
-                   totalExams, passedExams, totalCerts, totalQuiz, correctQuiz,
-                   recentLogs] = await Promise.all([
-              User_m.countDocuments(),
-              User_m.countDocuments({ role: 'student' }),
-              User_m.countDocuments({ role: 'instructor' }),
-              User_m.countDocuments({ role: 'admin' }),
-              User_m.countDocuments({ createdAt: { $gte: todayStart } }),
-              User_m.countDocuments({ createdAt: { $gte: weekStart } }),
-              TA.countDocuments({ completedAt: { $ne: null } }),
-              TA.countDocuments({ passed: true }),
-              Cert.countDocuments(),
-              QP.countDocuments(),
-              QP.countDocuments({ correct: true }),
-              AL.find().sort({ createdAt: -1 }).limit(10).lean(),
-            ]);
+          const [totalUsers, students, instructors, admins, regToday, regWeek,
+                 totalExams, passedExams, totalCerts, totalQuiz, correctQuiz,
+                 recentLogs, recentUsers, recentAttempts] = await Promise.all([
+            User_m.countDocuments(),
+            User_m.countDocuments({ role: 'student' }),
+            User_m.countDocuments({ role: 'instructor' }),
+            User_m.countDocuments({ role: 'admin' }),
+            User_m.countDocuments({ createdAt: { $gte: todayStart } }),
+            User_m.countDocuments({ createdAt: { $gte: weekStart } }),
+            TA.countDocuments({ completedAt: { $ne: null } }),
+            TA.countDocuments({ passed: true }),
+            Cert.countDocuments(),
+            QP.countDocuments(),
+            QP.countDocuments({ correct: true }),
+            AL.find().sort({ createdAt: -1 }).limit(10).lean(),
+            User_m.find().sort({ createdAt: -1 }).limit(15).select('displayName email role createdAt').lean(),
+            TA.find({ completedAt: { $ne: null } }).sort({ completedAt: -1 }).limit(5).lean(),
+          ]);
 
-            const recentLogsStr = recentLogs.map(l => `- ${l.action} (${new Date(l.createdAt).toISOString().slice(0,16)})`).join('\n');
+          // Format recent users
+          const recentUsersStr = recentUsers.map((u, idx) => `${idx + 1}. ${u.displayName} (${u.email}) - Vai trò: ${u.role} - Đăng ký: ${new Date(u.createdAt).toISOString().slice(0, 10)}`).join('\n');
 
-            adminDataContext = isVi
-              ? `\n\nDỮ LIỆU HỆ THỐNG (chỉ admin/giảng viên mới thấy):
-- Tổng người dùng: ${totalUsers} (Học sinh: ${students}, Giảng viên: ${instructors}, Admin: ${admins})
-- Đăng ký hôm nay: ${regToday}, tuần này: ${regWeek}
-- Bài thi đã nộp: ${totalExams}, đậu: ${passedExams}
-- Chứng chỉ đã cấp: ${totalCerts}
-- Câu quiz đã trả lời: ${totalQuiz}, đúng: ${correctQuiz} (${totalQuiz > 0 ? Math.round(correctQuiz/totalQuiz*100) : 0}%)
-- 10 hoạt động gần nhất:\n${recentLogsStr}`
-              : `\n\nSYSTEM DATA (admin/instructor-only):
-- Total users: ${totalUsers} (Students: ${students}, Instructors: ${instructors}, Admins: ${admins})
-- Registered today: ${regToday}, this week: ${regWeek}
-- Exams submitted: ${totalExams}, passed: ${passedExams}
-- Certificates issued: ${totalCerts}
-- Quiz answers: ${totalQuiz}, correct: ${correctQuiz} (${totalQuiz > 0 ? Math.round(correctQuiz/totalQuiz*100) : 0}%)
-- 10 recent activities:\n${recentLogsStr}`;
-          } catch (adminErr) {
-            console.warn('[Chat] Admin data query failed:', adminErr.message);
+          // Format recent activity logs
+          const logUserIds = [...new Set(recentLogs.map(l => l.userId ? l.userId.toString() : ''))].filter(Boolean);
+          const logUsers = await User_m.find({ _id: { $in: logUserIds } }).select('displayName').lean();
+          const logUserMap = {};
+          for (const u of logUsers) logUserMap[u._id.toString()] = u.displayName;
+          const recentLogsStr = recentLogs.map(l => {
+            const uName = logUserMap[l.userId?.toString()] || 'Hệ thống';
+            return `- User ${uName}: ${l.action} (${new Date(l.createdAt).toISOString().slice(0, 16)})`;
+          }).join('\n');
+
+          // Format recent test attempts
+          const attemptUserIds = recentAttempts.map(a => a.userId ? a.userId.toString() : '').filter(Boolean);
+          const attemptUsers = await User_m.find({ _id: { $in: attemptUserIds } }).select('displayName').lean();
+          const attemptUserMap = {};
+          for (const u of attemptUsers) attemptUserMap[u._id.toString()] = u.displayName;
+          const recentAttemptsStr = recentAttempts.map(a => {
+            const uName = attemptUserMap[a.userId?.toString()] || 'Học sinh';
+            return `- Học sinh ${uName}: Điểm ${a.score}/${a.totalQuestions} (${a.passed ? 'Đậu' : 'Trượt'}) lúc ${new Date(a.completedAt).toISOString().slice(0, 16)}`;
+          }).join('\n');
+
+          // Search user context if requested
+          let searchUserContext = '';
+          const emailMatch = message.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+          if (emailMatch) {
+            const searchEmail = emailMatch[0].toLowerCase().trim();
+            const foundUser = await User_m.findOne({ email: searchEmail }).select('-password').lean();
+            if (foundUser) {
+              searchUserContext += `\n- THÔNG TIN USER ĐƯỢC TÌM THẤY theo email "${searchEmail}":\n  + Tên: ${foundUser.displayName}\n  + Email: ${foundUser.email}\n  + Vai trò: ${foundUser.role}\n  + Ngày đăng ký: ${foundUser.createdAt}`;
+            }
           }
+
+          const searchKeywordMatch = message.match(/(?:tìm|search|thông tin của|user|người dùng)\s+([a-zA-ZÀ-ỹ\s0-9]+)/i);
+          if (searchKeywordMatch && searchKeywordMatch[1]) {
+            const searchName = searchKeywordMatch[1].trim();
+            if (searchName.length > 1) {
+              const foundUsers = await User_m.find({ displayName: { $regex: searchName, $options: 'i' } }).limit(5).select('-password').lean();
+              if (foundUsers.length > 0) {
+                searchUserContext += `\n- KẾT QUẢ TÌM KIẾM USER theo tên "${searchName}":\n` + foundUsers.map(u => `  + ${u.displayName} (${u.email}) - Vai trò: ${u.role} - Đăng ký: ${u.createdAt}`).join('\n');
+              }
+            }
+          }
+
+          adminDataContext = isVi
+            ? `\n\nDỮ LIỆU HỆ THỐNG THỜI GIAN THỰC (chỉ admin/giảng viên mới thấy):
+- Thống kê tổng quan:
+  + Tổng người dùng: ${totalUsers} (Học sinh: ${students}, Giảng viên: ${instructors}, Admin: ${admins})
+  + Đăng ký hôm nay: ${regToday}, tuần này: ${regWeek}
+  + Bài thi đã nộp: ${totalExams}, đậu: ${passedExams}
+  + Chứng chỉ đã cấp: ${totalCerts}
+  + Câu quiz đã trả lời: ${totalQuiz}, đúng: ${correctQuiz} (${totalQuiz > 0 ? Math.round(correctQuiz/totalQuiz*100) : 0}%)
+- Danh sách 15 người dùng đăng ký gần đây nhất:
+${recentUsersStr || 'Không có người dùng nào'}
+- 10 hoạt động gần đây nhất trên hệ thống:
+${recentLogsStr || 'Không có hoạt động nào'}
+- 5 lượt thi thử gần đây nhất:
+${recentAttemptsStr || 'Không có lượt thi nào'}${searchUserContext}`
+            : `\n\nREAL-TIME SYSTEM DATA (admin/instructor-only):
+- Overview stats:
+  + Total users: ${totalUsers} (Students: ${students}, Instructors: ${instructors}, Admins: ${admins})
+  + Registered today: ${regToday}, this week: ${regWeek}
+  + Exams submitted: ${totalExams}, passed: ${passedExams}
+  + Certificates issued: ${totalCerts}
+  + Quiz answers: ${totalQuiz}, correct: ${correctQuiz} (${totalQuiz > 0 ? Math.round(correctQuiz/totalQuiz*100) : 0}%)
+- List of 15 most recently registered users:
+${recentUsersStr || 'No users found'}
+- 10 recent activities:
+${recentLogsStr || 'No activities found'}
+- 5 recent exam attempts:
+${recentAttemptsStr || 'No exam attempts found'}${searchUserContext}`;
+        } catch (adminErr) {
+          console.warn('[Chat] Admin data query failed:', adminErr.message);
         }
       }
 
