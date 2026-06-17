@@ -344,8 +344,18 @@ const server = http.createServer(async (req, res) => {
 
     // ── GET /api/config ───────────────────────────────────────
     if (path === '/api/config' && req.method === 'GET') {
+      const groqKey = (process.env.GROQ_API_KEY || '').trim();
+      const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+      const openaiKey = (process.env.OPENAI_API_KEY || '').trim();
+      const provider = groqKey ? 'groq' : geminiKey ? 'gemini' : openaiKey ? 'openai' : null;
+      let defaultModelName = 'Llama 3.3';
+      if (provider === 'gemini') defaultModelName = 'Gemini 2.0 Flash';
+      else if (provider === 'openai') defaultModelName = 'GPT-4o';
+      else if (provider === 'groq') defaultModelName = 'Llama 3.3';
+
       json(res, {
         googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+        aiModel: defaultModelName
       });
       return;
     }
@@ -395,58 +405,14 @@ const server = http.createServer(async (req, res) => {
     // ── POST /api/difficulty ──────────────────────────────────
     } else if (path === '/api/difficulty' && req.method === 'POST') {
       const { difficulty } = await readBody(req);
-      const bc = getBlockchainForReq(req);
-      bc.difficulty = Math.max(1, Math.min(5, parseInt(difficulty)));
-      json(res, { difficulty: bc.difficulty });
-
-    // ── POST /api/reset ───────────────────────────────────────
-    } else if (path === '/api/reset' && req.method === 'POST') {
-      const bc = getBlockchainForReq(req);
-      const diff = bc.difficulty;
-      const clientId = req.headers['x-client-id'] || 'default';
-      const newBc = new Blockchain(diff);
-      blockchains.set(clientId, newBc);
-      json(res, { success: true, chain: newBc.toJSON() });
-
-    // ── GET /api/validate ─────────────────────────────────────
-    } else if (path === '/api/validate' && req.method === 'GET') {
-      const bc = getBlockchainForReq(req);
-      json(res, {
-        valid: bc.isChainValid(),
-        blockValidities: bc.getBlockValidities()
-      });
-
-    // ── POST /api/chat ────────────────────────────────────────
-    // AI chatbot endpoint — RAG-powered, proxies to Google Gemini (OpenAI-compatible)
-    } else if (path === '/api/chat' && req.method === 'POST') {
-      const body = await readBody(req);
-      const { message = '', context = {} } = body;
-
-      if (!message.trim()) { json(res, { error: 'message is required' }, 400); return; }
-      if (message.length > 2000) { json(res, { error: 'message too long' }, 400); return; }
-
-      // Priority: Groq > Gemini > OpenAI
-      const groqKey = (process.env.GROQ_API_KEY || '').trim();
-      const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-      const openaiKey = (process.env.OPENAI_API_KEY || '').trim();
-      const provider = groqKey ? 'groq' : geminiKey ? 'gemini' : openaiKey ? 'openai' : null;
-      const apiKey = groqKey || geminiKey || openaiKey;
-      if (!provider) {
-        json(res, { error: 'AI API key not configured. Add GROQ_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY to .env' }, 503);
-        return;
-      }
-
-      const lang = (context.lang || 'vi').toLowerCase();
-      const currentPage = context.current_page || 'home';
-      const isVi = lang === 'vi';
-
-      // ── Detect user role from token ────────────────────────────
+        // ── Detect user role from token ────────────────────────────
       const chatUserInfo = getUserFromReq(req);
       const userRole = chatUserInfo ? chatUserInfo.role : 'student';
+      console.log(`[Chat] Detected user role: ${userRole}`);
 
-      // ── Admin data context ─────────────────────────────────────
+      // ── Admin/Instructor data context ──────────────────────────
       let adminDataContext = '';
-      if (userRole === 'admin') {
+      if (userRole === 'admin' || userRole === 'instructor') {
         const adminKeywords = /nguoi dung|người dùng|user|dang ky|đăng ký|register|thong ke|thống kê|statistic|tien do|tiến độ|progress|bao nhieu|bao nhiêu|how many|tong|tổng|total|hoc sinh|học sinh|student|giang vien|giảng viên|instructor|tai khoan|tài khoản|account|log|hoat dong|hoạt động|activity|quiz|exam|chung chi|chứng chỉ|certificate/i;
         if (adminKeywords.test(message)) {
           try {
@@ -480,14 +446,14 @@ const server = http.createServer(async (req, res) => {
             const recentLogsStr = recentLogs.map(l => `- ${l.action} (${new Date(l.createdAt).toISOString().slice(0,16)})`).join('\n');
 
             adminDataContext = isVi
-              ? `\n\nDỮ LIỆU HỆ THỐNG (chỉ admin mới thấy):
+              ? `\n\nDỮ LIỆU HỆ THỐNG (chỉ admin/giảng viên mới thấy):
 - Tổng người dùng: ${totalUsers} (Học sinh: ${students}, Giảng viên: ${instructors}, Admin: ${admins})
 - Đăng ký hôm nay: ${regToday}, tuần này: ${regWeek}
 - Bài thi đã nộp: ${totalExams}, đậu: ${passedExams}
 - Chứng chỉ đã cấp: ${totalCerts}
 - Câu quiz đã trả lời: ${totalQuiz}, đúng: ${correctQuiz} (${totalQuiz > 0 ? Math.round(correctQuiz/totalQuiz*100) : 0}%)
 - 10 hoạt động gần nhất:\n${recentLogsStr}`
-              : `\n\nSYSTEM DATA (admin-only):
+              : `\n\nSYSTEM DATA (admin/instructor-only):
 - Total users: ${totalUsers} (Students: ${students}, Instructors: ${instructors}, Admins: ${admins})
 - Registered today: ${regToday}, this week: ${regWeek}
 - Exams submitted: ${totalExams}, passed: ${passedExams}
@@ -498,6 +464,40 @@ const server = http.createServer(async (req, res) => {
             console.warn('[Chat] Admin data query failed:', adminErr.message);
           }
         }
+      }
+
+      // ── Access Control Instructions ────────────────────────────
+      let systemInstruction = '';
+      if (userRole === 'admin') {
+        systemInstruction = isVi
+          ? `\n\nCHÚ Ý QUAN TRỌNG VỀ QUYỀN TRUY CẬP:
+- Người dùng hiện tại đang đăng nhập dưới quyền QUẢN TRỊ VIÊN (Admin).
+- Bạn có toàn quyền truy cập và phải sử dụng DỮ LIỆU HỆ THỐNG được cung cấp bên dưới để trả lời trực tiếp các câu hỏi thống kê của Admin về số lượng người dùng, hoạt động, đăng ký, tiến độ học, v.v.
+- TUYỆT ĐỐI không từ chối hoặc trả lời là 'không có quyền truy cập' đối với Admin.`
+          : `\n\nIMPORTANT ACCESS CONTROL NOTE:
+- The current user is logged in as an ADMINISTRATOR (Admin).
+- You have full permission and must use the SYSTEM DATA provided below to directly answer their statistical questions about user count, activities, registrations, learning progress, etc.
+- DO NOT refuse or reply with 'no access' to the Admin.`;
+      } else if (userRole === 'instructor') {
+        systemInstruction = isVi
+          ? `\n\nCHÚ Ý QUAN TRỌNG VỀ QUYỀN TRUY CẬP:
+- Người dùng hiện tại đang đăng nhập dưới quyền GIẢNG VIÊN (Instructor).
+- Bạn được phép truy cập và sử dụng DỮ LIỆU HỆ THỐNG bên dưới để trả lời các câu hỏi thống kê học tập, kết quả bài thi hoặc tiến độ của sinh viên.
+- Hãy trả lời giảng viên một cách chuyên nghiệp, chính xác bằng số liệu có sẵn.`
+          : `\n\nIMPORTANT ACCESS CONTROL NOTE:
+- The current user is logged in as an INSTRUCTOR.
+- You are allowed to access and use the SYSTEM DATA below to answer learning stats, exam attempts, or student progress questions.
+- Answer the instructor professionally and accurately using the available data.`;
+      } else {
+        systemInstruction = isVi
+          ? `\n\nCHÚ Ý QUAN TRỌNG VỀ QUYỀN TRUY CẬP:
+- Người dùng hiện tại là HỌC SINH hoặc KHÁCH (chưa đăng nhập hoặc không có quyền quản trị).
+- Nếu họ hỏi về số lượng người đăng ký web, danh sách người dùng, thống kê quản trị hoặc thông tin nhạy cảm khác, bạn TUYỆT ĐỐI không được cung cấp bất kỳ dữ liệu nào.
+- Hãy trả lời lịch sự rằng: 'Tôi không có quyền truy cập vào thông tin quản trị thời gian thực. Bạn cần đăng nhập với tài khoản Admin hoặc Giảng viên để xem các thông tin này trên trang quản lý.'`
+          : `\n\nIMPORTANT ACCESS CONTROL NOTE:
+- The current user is a STUDENT or GUEST (not logged in or lacks admin rights).
+- If they ask about registered user counts, user lists, admin stats, or other sensitive details, you MUST NOT provide any data.
+- Politely reply: 'I do not have access to real-time administrative statistics. You must log in as an Admin or Instructor to view these statistics in the management panel.'`;
       }
 
       // ── Web knowledge context ──────────────────────────────────
@@ -511,7 +511,7 @@ Website giáo dục Blockchain tương tác gồm các tính năng:
 - Quiz & Exam: Ôn tập trắc nghiệm theo chủ đề, thi thử 40 câu có thời gian, cấp chứng chỉ
 - Hồ sơ (Profile): Xem tiến độ học, lịch sử thi, chứng chỉ
 - AI Chatbot: Trợ lý AI học blockchain, được huấn luyện trên 14 tài liệu nghiên cứu
-Hệ thống có 3 vai trò: Admin (quản trị toàn bộ), Giảng viên (quản lý quiz + xem tiến độ học sinh), Học sinh (học + làm bài).`
+Hệ thống có 3 vai trò: Admin (quản trị toàn bộ), Giảng viên (quảng lý quiz + xem tiến độ học sinh), Học sinh (học + làm bài).`
         : `\nABOUT HubBlock WEBSITE:
 An interactive Blockchain education web app with features:
 - Home: Overview and highlights
@@ -530,7 +530,7 @@ System has 3 roles: Admin (full management), Instructor (quiz management + view 
         const ragK = adminDataContext ? 4 : 20; // fewer RAG chunks when admin data is present
         const relevantChunks = await ragEngine.searchSimilar(message.trim(), ragK);
         if (relevantChunks.length > 0) {
-          ragContext = ragEngine.buildRAGContext(relevantChunks, lang);
+          ragContext = ragEngine.buildRAGContext(relevantChunks, isVi ? 'vi' : 'en');
           sources = ragEngine.buildSourcesList(relevantChunks);
         }
       } catch (ragErr) {
@@ -558,7 +558,7 @@ QUY TẮC QUAN TRỌNG:
 2. LUÔN trích dẫn nguồn ngay dước đoạn văn dựa theo đúng format ở phần TÀI LIỆU (KHÔNG DÙNG "Nguồn 1", "Nguồn 2", mà phải dùng trực tiếp Tên sách). Ví dụ: [Tên Sách, tr. X]
 3. TUYỆT ĐỐI KHÔNG dùng định dạng toán học LaTeX (như \\(, \\), \\[, \\]). Dùng text bình thường và các ký hiệu thông dụng (ví dụ: c = m^e mod n).
 4. Nếu thông tin không có trong tài liệu trên, hãy nói rõ: "Theo kiến thức chung..."
-5. Ưu tiên thông tin từ tài liệu hơn kiến thức nền.${webKnowledge}${adminDataContext}`
+5. Ưu tiên thông tin từ tài liệu hơn kiến thức nền.${systemInstruction}${webKnowledge}${adminDataContext}`
           : `You are HubBlock's AI Assistant — a blockchain education web app.
 Current page: "${currentPage}"
 You have been trained on the following 14 documents:
@@ -573,15 +573,15 @@ IMPORTANT RULES:
 2. ALWAYS cite sources in your answer using the exact format provided in DOCUMENTS (DO NOT use "Source 1", "Source 2", but use the Book Title directly). Example: [Book Title, p. X]
 3. DO NOT use LaTeX math formatting like \\( \\) or \\[ \\]. Use plain text and standard symbols (e.g. c = m^e mod n).
 4. If information is not in the documents above, clearly state: "Based on general knowledge..."
-5. Prioritize document information over general knowledge.${webKnowledge}${adminDataContext}`;
+5. Prioritize document information over general knowledge.${systemInstruction}${webKnowledge}${adminDataContext}`;
       } else {
         systemPrompt = isVi
           ? `Bạn là AI Assistant của HubBlock — ứng dụng web giáo dục Blockchain cho sinh viên.
 Trang hiện tại: "${currentPage}"
-Trả lời Tiếng Việt, thân thiện, ngắn gọn. Tập trung vào blockchain, mật mã học, hướng dẫn app.${webKnowledge}${adminDataContext}`
+Trả lời Tiếng Việt, thân thiện, ngắn gọn. Tập trung vào blockchain, mật mã học, hướng dẫn app.${systemInstruction}${webKnowledge}${adminDataContext}`
           : `You are HubBlock's AI Assistant — a blockchain education web app.
 Current page: "${currentPage}"
-Reply in English, friendly and concise. Focus on blockchain, cryptography, app guidance.${webKnowledge}${adminDataContext}`;
+Reply in English, friendly and concise. Focus on blockchain, cryptography, app guidance.${systemInstruction}${webKnowledge}${adminDataContext}`;
       }
 
       const history = Array.isArray(context.history) ? context.history : [];
@@ -601,10 +601,34 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
 
       const AI_CFG = {
         groq:   { models: GROQ_MODELS, hostname: 'api.groq.com',                    path: '/openai/v1/chat/completions' },
-        gemini: { models: ['gemini-2.0-flash'],  hostname: 'generativelanguage.googleapis.com', path: '/v1beta/openai/chat/completions' },
-        openai: { models: ['gpt-4o-mini'],       hostname: 'api.openai.com',                    path: '/v1/chat/completions' },
+        gemini: { models: ['gemini-2.0-flash', 'gemini-1.5-flash'],  hostname: 'generativelanguage.googleapis.com', path: '/v1beta/openai/chat/completions' },
+        openai: { models: ['gpt-4o', 'gpt-4o-mini'],       hostname: 'api.openai.com',                    path: '/v1/chat/completions' },
       };
       const cfg = AI_CFG[provider];
+
+
+
+      // Try models in order, fallback on rate limit (429) or quota errors
+      let reply = '';
+      let usedModel = cfg.models[0];
+      for (const modelName of cfg.models) {
+        try {
+          const result = await callModel(modelName);
+          reply = result.content;
+          usedModel = result.model;
+          break;
+        } catch (err) {
+          const isRateLimit = err.statusCode === 429 || /rate.limit|quota|limit|too many/i.test(err.message);
+          if (isRateLimit && modelName !== cfg.models[cfg.models.length - 1]) {
+            console.warn(`[Chat] ${modelName} rate-limited, trying next model...`);
+            continue;
+          }
+          throw err;
+        }
+      }
+      console.log(`[Chat] Used model: ${usedModel}`);
+
+      json(res, { reply, sources, model: usedModel });
 
       // Helper: call one model
       function callModel(modelName) {
@@ -647,27 +671,7 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
         });
       }
 
-      // Try models in order, fallback on rate limit (429) or quota errors
-      let reply = '';
-      let usedModel = cfg.models[0];
-      for (const modelName of cfg.models) {
-        try {
-          const result = await callModel(modelName);
-          reply = result.content;
-          usedModel = result.model;
-          break;
-        } catch (err) {
-          const isRateLimit = err.statusCode === 429 || /rate.limit|quota|limit|too many/i.test(err.message);
-          if (isRateLimit && modelName !== cfg.models[cfg.models.length - 1]) {
-            console.warn(`[Chat] ${modelName} rate-limited, trying next model...`);
-            continue;
-          }
-          throw err;
-        }
-      }
-      console.log(`[Chat] Used model: ${usedModel}`);
 
-      json(res, { reply, sources });
 
     // ── GET /health ───────────────────────────────────────────
     } else if (path === '/health') {

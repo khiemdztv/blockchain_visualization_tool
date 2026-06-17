@@ -198,10 +198,22 @@ export default function Chatbot({ lang = 'vi', currentPage = 'home' }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [activeModel, setActiveModel] = useState('Llama 3.3');
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
+
+  useEffect(() => {
+    fetch('/api/config')
+      .then(r => r.json())
+      .then(data => {
+        if (data.aiModel) {
+          setActiveModel(data.aiModel);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -251,6 +263,33 @@ export default function Chatbot({ lang = 'vi', currentPage = 'home' }) {
       }
 
       const data = await res.json();
+      if (data.model) {
+        let displayModel = data.model;
+        if (displayModel.toLowerCase().startsWith('gemini-')) {
+          displayModel = displayModel
+            .split('-')
+            .map((word, index) => {
+              if (index === 0) return 'Gemini';
+              if (word === 'flash') return 'Flash';
+              if (word === 'pro') return 'Pro';
+              return word;
+            })
+            .join(' ');
+        } else if (displayModel.toLowerCase().startsWith('gpt-')) {
+          displayModel = displayModel.replace(/^gpt-/i, 'GPT-');
+        } else if (displayModel.toLowerCase().includes('llama')) {
+          if (displayModel.toLowerCase().includes('llama-4')) {
+            displayModel = 'Llama 4';
+          } else if (displayModel.toLowerCase().includes('llama-3.3')) {
+            displayModel = 'Llama 3.3';
+          } else {
+            displayModel = 'Llama 3.1';
+          }
+        } else if (displayModel.toLowerCase().includes('qwen')) {
+          displayModel = 'Qwen 3';
+        }
+        setActiveModel(displayModel);
+      }
       const botMsg = {
         id: Date.now() + 1,
         role: 'bot',
@@ -419,7 +458,11 @@ export default function Chatbot({ lang = 'vi', currentPage = 'home' }) {
 
         {/* Footer */}
         <div className="cb-footer">
-          <span className="cb-footer-text">{t.poweredBy}</span>
+          <span className="cb-footer-text">
+            {lang === 'vi' 
+              ? `RAG · ${activeModel || 'Gemini 2.0 Flash'} · 14 tài liệu nghiên cứu`
+              : `RAG · ${activeModel || 'Gemini 2.0 Flash'} · 14 Research Papers`}
+          </span>
         </div>
       </div>
     </>
