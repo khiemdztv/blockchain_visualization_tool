@@ -13,3 +13,12 @@ export async function apiHash(input) {
     return d?.hash || null;
   } catch { return null; }
 }
+
+export function getClientId() {
+  let id = localStorage.getItem('blockedu_client_id');
+  if (!id) {
+    id = 'client_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+    localStorage.setItem('blockedu_client_id', id);
+  }
+  return id;
+}

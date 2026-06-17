@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { LANG } from '../data/lang.js';
-import { API } from '../utils/crypto.js';
+import { API, getClientId, sha256browser } from '../utils/crypto.js';
 import Button from '../components/ui/Button.jsx';
 import Card from '../components/ui/Card.jsx';
 import Badge from '../components/ui/Badge.jsx';
@@ -89,11 +89,13 @@ export default function MiningView({ lang = "vi" }) {
   const [mineTarget, setMineTarget] = useState("");
   const [tamperIdx, setTamperIdx] = useState(null);
   const [tamperText, setTamperText] = useState("");
-  const eventSourceRef = useRef(null);
+  const miningActiveRef = useRef(false);
 
   const loadChain = useCallback(async () => {
     try {
-      const r = await fetch(`${API}/api/chain`);
+      const r = await fetch(`${API}/api/chain`, {
+        headers: { 'x-client-id': getClientId() }
+      });
       const d = await r.json();
       setChain(d);
       setDifficulty(d.difficulty);
@@ -102,46 +104,103 @@ export default function MiningView({ lang = "vi" }) {
   }, []);
 
   useEffect(() => { loadChain(); }, [loadChain]);
-  useEffect(() => () => { if (eventSourceRef.current) eventSourceRef.current.close(); }, []);
+  useEffect(() => () => { miningActiveRef.current = false; }, []);
 
   const startMining = async () => {
-    setMining(true); setMineResult(null);
-    setCurrentNonce(0); setCurrentHash(""); setElapsed(0);
-    setMineTarget("0".repeat(difficulty));
-    try {
-      const r = await fetch(`${API}/api/block/add`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: mineData || `Block #${chain ? chain.length : 1}` })
-      });
-      const d = await r.json();
-      if (!d.success) { setMining(false); return; }
-      if (eventSourceRef.current) eventSourceRef.current.close();
-      const es = new EventSource(`${API}/api/mine/stream?index=${d.block.index}`);
-      eventSourceRef.current = es;
-      es.onmessage = (e) => {
-        const ev = JSON.parse(e.data);
-        if (ev.error) { es.close(); setMining(false); return; }
-        setCurrentNonce(ev.nonce); setCurrentHash(ev.hash); setElapsed(ev.elapsed || 0);
-        if (ev.target) setMineTarget(ev.target);
-        if (ev.done) {
-          es.close(); eventSourceRef.current = null;
-          setMining(false); setMineResult(ev);
-          if (ev.chain) setChain(ev.chain);
+    setMining(true);
+    setMineResult(null);
+    setCurrentNonce(0);
+    setCurrentHash("");
+    setElapsed(0);
+    miningActiveRef.current = true;
+
+    const target = "0".repeat(difficulty);
+    setMineTarget(target);
+
+    const index = chain ? chain.chain.length : 1;
+    const timestamp = Date.now();
+    const data = mineData || `${t.blockStr} #${index}`;
+    const previousHash = chain && chain.chain.length > 0 ? chain.chain[chain.chain.length - 1].hash : "0000000000000000000000000000000000000000000000000000000000000000";
+    const merkleRoot = ""; // Empty transactions for simulator blocks
+
+    const start = Date.now();
+    let nonce = 0;
+
+    const tick = async () => {
+      if (!miningActiveRef.current) return;
+
+      const BATCH_SIZE = 150; // Process 150 hashes per tick to keep UI responsive
+      for (let i = 0; i < BATCH_SIZE; i++) {
+        if (!miningActiveRef.current) return;
+
+        const hashInput = `${index}${timestamp}${data}${previousHash}${nonce}${merkleRoot}`;
+        const hash = await sha256browser(hashInput);
+
+        // Update UI periodically
+        if (nonce % 150 === 0 || hash.startsWith(target)) {
+          setCurrentNonce(nonce);
+          setCurrentHash(hash);
+          setElapsed(Date.now() - start);
         }
-      };
-      es.onerror = () => { es.close(); eventSourceRef.current = null; setMining(false); loadChain(); };
-    } catch (e) { setMining(false); }
+
+        if (hash.startsWith(target)) {
+          try {
+            const r = await fetch(`${API}/api/block/add`, {
+              method: "POST",
+              headers: { 
+                "Content-Type": "application/json",
+                "x-client-id": getClientId()
+              },
+              body: JSON.stringify({
+                data,
+                nonce,
+                hash,
+                timestamp,
+                previousHash
+              })
+            });
+            const d = await r.json();
+            if (d.success) {
+              setChain(d.chain);
+              setMineResult({ nonce, hash, elapsed: Date.now() - start });
+            }
+          } catch (e) {
+            console.error("Failed to add mined block:", e);
+          }
+          setMining(false);
+          miningActiveRef.current = false;
+          return;
+        }
+
+        nonce++;
+        if (nonce > 2000000) {
+          setMineResult({ failed: true, nonce });
+          setMining(false);
+          miningActiveRef.current = false;
+          return;
+        }
+      }
+
+      // Yield to next frame
+      setTimeout(tick, 0);
+    };
+
+    tick();
   };
 
   const stopMining = () => {
-    if (eventSourceRef.current) { eventSourceRef.current.close(); eventSourceRef.current = null; }
-    setMining(false); loadChain();
+    miningActiveRef.current = false;
+    setMining(false);
+    loadChain();
   };
 
   const addBlock = async () => {
     const r = await fetch(`${API}/api/block/add`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: `Block #${chain ? chain.length : 1}` })
+      method: "POST", headers: { 
+        "Content-Type": "application/json",
+        "x-client-id": getClientId()
+      },
+      body: JSON.stringify({ data: `Block #${chain ? chain.chain.length : 1}` })
     });
     const d = await r.json();
     if (d.chain) setChain(d.chain);
@@ -149,7 +208,10 @@ export default function MiningView({ lang = "vi" }) {
 
   const doTamper = async (index) => {
     const r = await fetch(`${API}/api/block/tamper`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { 
+        "Content-Type": "application/json",
+        "x-client-id": getClientId()
+      },
       body: JSON.stringify({ index, data: tamperText || "HACKED DATA!" })
     });
     const d = await r.json();
@@ -159,7 +221,10 @@ export default function MiningView({ lang = "vi" }) {
 
   const doRestore = async (index) => {
     const r = await fetch(`${API}/api/block/restore`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { 
+        "Content-Type": "application/json",
+        "x-client-id": getClientId()
+      },
       body: JSON.stringify({ index })
     });
     const d = await r.json();
@@ -168,7 +233,10 @@ export default function MiningView({ lang = "vi" }) {
 
   const changeDifficulty = async (newDiff) => {
     const r = await fetch(`${API}/api/difficulty`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { 
+        "Content-Type": "application/json",
+        "x-client-id": getClientId()
+      },
       body: JSON.stringify({ difficulty: newDiff })
     });
     const d = await r.json();
@@ -177,7 +245,12 @@ export default function MiningView({ lang = "vi" }) {
   };
 
   const resetChain = async () => {
-    const r = await fetch(`${API}/api/reset`, { method: "POST", headers: { "Content-Type": "application/json" } });
+    const r = await fetch(`${API}/api/reset`, { 
+      method: "POST", headers: { 
+        "Content-Type": "application/json",
+        "x-client-id": getClientId()
+      } 
+    });
     const d = await r.json();
     if (d.chain) setChain(d.chain);
   };
@@ -319,7 +392,7 @@ export default function MiningView({ lang = "vi" }) {
                 {/* Stats Grid */}
                 <div className="live-stats-grid">
                   {[
-                    { label: t.statTime, value: `${(elapsed / 1000).toFixed(1)}s`, color: 'var(--cyan)' },
+                    { label: t.statTime, value: elapsed === 0 ? '< 0.001s' : elapsed < 1000 ? `${(elapsed / 1000).toFixed(3)}s` : elapsed < 10000 ? `${(elapsed / 1000).toFixed(2)}s` : `${(elapsed / 1000).toFixed(1)}s`, color: 'var(--cyan)' },
                     { label: t.statRate, value: hashRate.toLocaleString(), color: 'var(--amber)' },
                     { label: t.statTries, value: currentNonce.toLocaleString(), color: 'var(--blue)' },
                     { label: t.statDiff, value: difficulty, color: 'var(--purple)' },

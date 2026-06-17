@@ -167,11 +167,28 @@ class Blockchain {
     this.chain.push(genesis);
   }
 
-  addBlock(data, transactions = []) {
+  addBlock(data, transactions = [], nonce = null, hash = null, timestamp = null) {
     const prev = this.chain[this.chain.length - 1];
     const b = new Block(this.chain.length, data, prev.hash);
+    if (timestamp !== null) {
+      b.timestamp = timestamp;
+    }
     for (const tx of transactions) b.addTransaction(tx);
-    mineSync(b, this.difficulty);
+    
+    if (nonce !== null && hash !== null) {
+      b.nonce = nonce;
+      // Recalculate hash to verify integrity
+      const recalculated = b.calculateHash();
+      const target = '0'.repeat(this.difficulty);
+      if (recalculated === hash && hash.startsWith(target)) {
+        b.hash = hash;
+      } else {
+        console.warn(`[BlockEdu] Client block validation failed. Recalculated: ${recalculated}, Client hash: ${hash}. Remining on server...`);
+        mineSync(b, this.difficulty);
+      }
+    } else {
+      mineSync(b, this.difficulty);
+    }
     this.chain.push(b);
     return b;
   }
@@ -237,7 +254,20 @@ function mineSync(block, difficulty) {
 }
 
 // ─── Global state ──────────────────────────────────────────────
-let blockchain = new Blockchain(3);
+const blockchains = new Map();
+blockchains.set('default', new Blockchain(3));
+
+function getBlockchainForReq(req) {
+  let clientId = req.headers['x-client-id'];
+  if (!clientId) {
+    const parsed = url.parse(req.url, true);
+    clientId = parsed.query?.clientId || 'default';
+  }
+  if (!blockchains.has(clientId)) {
+    blockchains.set(clientId, new Blockchain(3));
+  }
+  return blockchains.get(clientId);
+}
 
 // ═══════════════════════════════════════════════════════════════
 // HTTP SERVER
@@ -322,83 +352,30 @@ const server = http.createServer(async (req, res) => {
 
     // ── GET /api/chain ────────────────────────────────────────
     if (path === '/api/chain' && req.method === 'GET') {
-      json(res, blockchain.toJSON());
+      const bc = getBlockchainForReq(req);
+      json(res, bc.toJSON());
 
     // ── POST /api/block/add ───────────────────────────────────
     } else if (path === '/api/block/add' && req.method === 'POST') {
       const body = await readBody(req);
-      const { data = '', transactions = [] } = body;
-      const block = blockchain.addBlock(data || `Block ${blockchain.chain.length}`, transactions);
-      json(res, { success: true, block: block.toJSON(), chain: blockchain.toJSON() });
+      const { data = '', transactions = [], nonce = null, hash = null, timestamp = null } = body;
+      const bc = getBlockchainForReq(req);
+      const block = bc.addBlock(data || `Block ${bc.chain.length}`, transactions, nonce, hash, timestamp);
+      json(res, { success: true, block: block.toJSON(), chain: bc.toJSON() });
 
     // ── POST /api/block/tamper ────────────────────────────────
     } else if (path === '/api/block/tamper' && req.method === 'POST') {
       const { index, data } = await readBody(req);
-      const ok = blockchain.tamperBlock(index, data);
-      json(res, { success: ok, chain: blockchain.toJSON() });
+      const bc = getBlockchainForReq(req);
+      const ok = bc.tamperBlock(index, data);
+      json(res, { success: ok, chain: bc.toJSON() });
 
     // ── POST /api/block/restore ───────────────────────────────
     } else if (path === '/api/block/restore' && req.method === 'POST') {
       const { index } = await readBody(req);
-      blockchain.restoreBlock(index);
-      json(res, { success: true, chain: blockchain.toJSON() });
-
-    // ── GET /api/mine/stream?index=N ─────────────────────────
-    // Server-Sent Events — real-time mining animation
-    } else if (path === '/api/mine/stream' && req.method === 'GET') {
-      const index = parseInt(parsed.query.index || '1');
-      const block = blockchain.chain[index];
-      if (!block) { json(res, { error: 'Block not found' }, 404); return; }
-
-      res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'X-Accel-Buffering': 'no'
-      });
-
-      // Reset block for re-mining
-      block.nonce = 0;
-      block.tampered = false;
-      if (index > 0) block.previousHash = blockchain.chain[index-1].hash;
-
-      const target = '0'.repeat(blockchain.difficulty);
-      const start = Date.now();
-      let nonce = 0;
-      let aborted = false;
-      req.on('close', () => { aborted = true; });
-
-      const tick = () => {
-        if (aborted) return;
-        const BATCH = 200; // process 200 nonces per tick
-        for (let j = 0; j < BATCH; j++) {
-          block.nonce = nonce;
-          const hash = block.calculateHash();
-          if (nonce % 200 === 0 || hash.startsWith(target)) {
-            const elapsed = Date.now() - start;
-            const found = hash.startsWith(target);
-            const payload = JSON.stringify({ nonce, hash, elapsed, found, target });
-            try { res.write(`data: ${payload}\n\n`); } catch(e) { aborted = true; return; }
-            if (found) {
-              block.hash = hash;
-              const donePayload = JSON.stringify({
-                done: true, nonce, hash, elapsed,
-                chain: blockchain.toJSON()
-              });
-              try { res.write(`data: ${donePayload}\n\n`); res.end(); } catch(e) {}
-              return;
-            }
-          }
-          nonce++;
-          if (nonce > 2_000_000) {
-            block.hash = block.calculateHash();
-            try { res.write(`data: {"done":true,"failed":true,"nonce":${nonce}}\n\n`); res.end(); } catch(e) {}
-            return;
-          }
-        }
-        setImmediate(tick); // yield to event loop every batch
-      };
-      tick();
+      const bc = getBlockchainForReq(req);
+      bc.restoreBlock(index);
+      json(res, { success: true, chain: bc.toJSON() });
 
     // ── POST /api/hash ────────────────────────────────────────
     } else if (path === '/api/hash' && req.method === 'POST') {
@@ -418,20 +395,25 @@ const server = http.createServer(async (req, res) => {
     // ── POST /api/difficulty ──────────────────────────────────
     } else if (path === '/api/difficulty' && req.method === 'POST') {
       const { difficulty } = await readBody(req);
-      blockchain.difficulty = Math.max(1, Math.min(5, parseInt(difficulty)));
-      json(res, { difficulty: blockchain.difficulty });
+      const bc = getBlockchainForReq(req);
+      bc.difficulty = Math.max(1, Math.min(5, parseInt(difficulty)));
+      json(res, { difficulty: bc.difficulty });
 
     // ── POST /api/reset ───────────────────────────────────────
     } else if (path === '/api/reset' && req.method === 'POST') {
-      const diff = blockchain.difficulty;
-      blockchain = new Blockchain(diff);
-      json(res, { success: true, chain: blockchain.toJSON() });
+      const bc = getBlockchainForReq(req);
+      const diff = bc.difficulty;
+      const clientId = req.headers['x-client-id'] || 'default';
+      const newBc = new Blockchain(diff);
+      blockchains.set(clientId, newBc);
+      json(res, { success: true, chain: newBc.toJSON() });
 
     // ── GET /api/validate ─────────────────────────────────────
     } else if (path === '/api/validate' && req.method === 'GET') {
+      const bc = getBlockchainForReq(req);
       json(res, {
-        valid: blockchain.isChainValid(),
-        blockValidities: blockchain.getBlockValidities()
+        valid: bc.isChainValid(),
+        blockValidities: bc.getBlockValidities()
       });
 
     // ── POST /api/chat ────────────────────────────────────────
@@ -689,7 +671,8 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
 
     // ── GET /health ───────────────────────────────────────────
     } else if (path === '/health') {
-      json(res, { status: 'ok', difficulty: blockchain.difficulty, blocks: blockchain.chain.length });
+      const bc = getBlockchainForReq(req);
+      json(res, { status: 'ok', difficulty: bc.difficulty, blocks: bc.chain.length });
 
     } else {
       json(res, { error: 'Not found' }, 404);
@@ -742,6 +725,7 @@ connectDB().then(async (ok) => {
 
 server.listen(PORT, () => {
   console.log(`[HubBlock] Node.js Gateway + Core running on http://localhost:${PORT}`);
-  console.log(`[HubBlock] API: /api/chain | /api/block/add | /api/mine/stream | /api/merkle`);
-  console.log(`[HubBlock] Chain initialized: difficulty=${blockchain.difficulty}, blocks=${blockchain.chain.length}`);
+  console.log(`[HubBlock] API: /api/chain | /api/block/add | /api/merkle`);
+  const defaultBc = blockchains.get('default');
+  console.log(`[HubBlock] Chain initialized: difficulty=${defaultBc.difficulty}, blocks=${defaultBc.chain.length}`);
 });
