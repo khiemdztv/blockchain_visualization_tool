@@ -1,31 +1,98 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LANG } from '../../data/lang.js';
 import MerkleInputPanel from './MerkleInputPanel';
 import MerkleVisualization from './MerkleVisualization';
 import MerkleTheory from './MerkleTheory';
+import { sha256browser } from '../../utils/crypto.js';
 
 export default function MerkleTab({ lang = 'vi' }) {
   const t = LANG[lang].merkle;
   const [treeData, setTreeData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMSG, setErrorMSG] = useState(null);
+  const [isGenerated, setIsGenerated] = useState(false);
 
-  const fetchMerkleTree = async (transactions) => {
+  // Build default transactions from translation keys so they're always localized
+  const getDefaultTransactions = (langVal) => [
+    LANG[langVal].merkle.defaultTxA,
+    LANG[langVal].merkle.defaultTxB,
+    LANG[langVal].merkle.defaultTxC,
+    LANG[langVal].merkle.defaultTxD,
+  ];
+
+  const [transactions, setTransactions] = useState(() => getDefaultTransactions(lang));
+
+  // Re-sync defaults when language changes (only if user hasn't edited them)
+  useEffect(() => {
+    setTransactions(prev => {
+      const prevDefaults = getDefaultTransactions(lang === 'vi' ? 'en' : 'vi');
+      const currDefaults = getDefaultTransactions(lang);
+      return prev.map((tx, i) =>
+        prevDefaults[i] === tx ? (currDefaults[i] ?? tx) : tx
+      );
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
+  const buildLocalMerkleTree = async (txs) => {
+    if (!txs || txs.length === 0) return null;
+    const leafHashes = [];
+    for (const tx of txs) {
+      leafHashes.push(await sha256browser(tx || ''));
+    }
+    let working = [...leafHashes];
+    const levels = [[...leafHashes]];
+    while (working.length > 1) {
+      const next = [];
+      if (working.length % 2 === 1) {
+        working.push(working[working.length - 1]);
+      }
+      for (let i = 0; i < working.length; i += 2) {
+        const combined = working[i] + working[i+1];
+        const h = await sha256browser(combined);
+        next.push(h);
+      }
+      levels.unshift(next);
+      working = next;
+    }
+    return {
+      root: working[0],
+      levels,
+      transactions: txs.map((d, i) => ({ data: d, hash: leafHashes[i] }))
+    };
+  };
+
+  // Auto-update Merkle tree in real-time when inputs change (only if generated once)
+  useEffect(() => {
+    if (!isGenerated) return;
+    
+    // Check if there are empty transactions - if so, don't update to avoid half-empty UI state
+    if (transactions.some(tx => !tx.trim())) return;
+
+    let isCurrent = true;
+    const updateTree = async () => {
+      try {
+        const tree = await buildLocalMerkleTree(transactions);
+        if (isCurrent) {
+          setTreeData(tree);
+        }
+      } catch (err) {
+        console.error('Failed to auto-update Merkle Tree:', err);
+      }
+    };
+    updateTree();
+    return () => { isCurrent = false; };
+  }, [transactions, isGenerated]);
+
+  const fetchMerkleTree = async (txs) => {
     setLoading(true);
     setErrorMSG(null);
     try {
-      await new Promise(r => setTimeout(r, 500));
-
-      const response = await fetch('/api/merkle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactions }),
-      });
-
-      if (!response.ok) throw new Error(`Server returned ${response.status}`);
-
-      const data = await response.json();
-      setTreeData(data);
+      // Small visual delay to show a premium loading state
+      await new Promise(r => setTimeout(r, 300));
+      const tree = await buildLocalMerkleTree(txs);
+      setTreeData(tree);
+      setIsGenerated(true);
     } catch (err) {
       console.error('Failed to generate Merkle Tree:', err);
       setErrorMSG(t.errorServer);
@@ -45,7 +112,13 @@ export default function MerkleTab({ lang = 'vi' }) {
         
         {/* LEFT: Inputs */}
         <div className="merkle-sidebar">
-          <MerkleInputPanel onGenerate={fetchMerkleTree} loading={loading} lang={lang} />
+          <MerkleInputPanel 
+            transactions={transactions} 
+            setTransactions={setTransactions} 
+            onGenerate={fetchMerkleTree} 
+            loading={loading} 
+            lang={lang} 
+          />
         </div>
 
         {/* RIGHT: Canvas */}

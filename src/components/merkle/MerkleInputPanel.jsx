@@ -1,33 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { LANG } from '../../data/lang.js';
 
-export default function MerkleInputPanel({ onGenerate, loading, lang = 'vi' }) {
+export default function MerkleInputPanel({ transactions, setTransactions, onGenerate, loading, lang = 'vi' }) {
   const t = LANG[lang].merkle;
-
-  // Build default transactions from translation keys so they're always localized
-  const getDefaultTransactions = (tObj) => [
-    tObj.defaultTxA,
-    tObj.defaultTxB,
-    tObj.defaultTxC,
-    tObj.defaultTxD,
-  ];
-
-  const [transactions, setTransactions] = useState(() => getDefaultTransactions(LANG[lang].merkle));
   const [error, setError] = useState(null);
-
-  // Re-sync defaults when language changes (only if user hasn't edited them)
-  useEffect(() => {
-    setTransactions(prev => {
-      const prevDefaults = getDefaultTransactions(LANG[lang === 'vi' ? 'en' : 'vi'].merkle);
-      const currDefaults = getDefaultTransactions(LANG[lang].merkle);
-      // Only auto-replace entries that match the old defaults (user-typed entries are preserved)
-      return prev.map((tx, i) =>
-        prevDefaults[i] === tx ? (currDefaults[i] ?? tx) : tx
-      );
-    });
-    setError(null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
 
   const handleChange = (i, val) => {
     const next = [...transactions];
@@ -44,6 +20,7 @@ export default function MerkleInputPanel({ onGenerate, loading, lang = 'vi' }) {
     const label = String.fromCharCode(65 + transactions.length);
     const newTxLabel = t.transactionLabel.replace('{{label}}', label);
     setTransactions([...transactions, newTxLabel]);
+    setError(null);
   };
 
   const removeTx = (i) => {
