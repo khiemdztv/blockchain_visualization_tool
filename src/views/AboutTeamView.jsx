@@ -98,7 +98,7 @@ export default function AboutTeamView({ lang = "vi" }) {
           
           <div className="team-contact-grid">
             {[
-              { name: 'TS. Nguyễn Hoài Đức', role: LANG[lang].footerSupervisorRole, email: 'nguyenhoaduc@hub.edu.vn', phone: '000 111 2224' },
+              { name: 'TS. Nguyễn Hoài Đức', role: LANG[lang].footerSupervisorRole, email: 'ducnh@hub.edu.vn', phone: '000 111 2224' },
               { name: 'Lâm Tuấn Vũ', role: LANG[lang].footerTeamLeadRole, email: 'vtkteam2005@gmail.com', phone: '0867900730' },
             ].map(c => (
               <div key={c.name} className="team-contact-card">
