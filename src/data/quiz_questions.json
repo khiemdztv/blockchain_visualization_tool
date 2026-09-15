@@ -6364,20 +6364,20 @@
     "question_vi": "Bảng Rainbow (Rainbow table) là gì và hoạt động như thế nào?",
     "question_en": "What is a rainbow table and how does it work?",
     "options_vi": [
-      "64",
-      "128",
-      "256",
-      "512"
+      "Bảng định tuyến dữ liệu giữa các node trong mạng ngang hàng",
+      "Bảng hash precomputed dùng để tra cứu và bẻ khóa mật khẩu",
+      "Bảng mã hóa dữ liệu hai chiều để tăng tốc độ tính toán",
+      "Cấu trúc bảng chứa danh sách private key ngẫu nhiên"
     ],
     "options_en": [
-      "64",
-      "128",
-      "256",
-      "512"
+      "Data routing table between nodes in a peer-to-peer network",
+      "Precomputed hash table used to lookup and crack passwords",
+      "Two-way data encryption table used to accelerate hashing",
+      "Table structure containing a list of random private keys"
     ],
     "correct": 1,
-    "explanation_vi": "128 bits = 32 hex chars.",
-    "explanation_en": "128 bits = 32 hex chars."
+    "explanation_vi": "Bảng Rainbow (Rainbow table) lưu trữ trước các giá trị băm đã tính sẵn để tra cứu ngược mật khẩu. Kỹ thuật thêm Salt giúp ngăn chặn hiệu quả loại tấn công này.",
+    "explanation_en": "A rainbow table stores precomputed hash values for reverse lookup to crack passwords. Adding salt effectively mitigates this attack."
   },
   {
     "id": "q291",
@@ -6386,20 +6386,20 @@
     "question_vi": "Salt trong băm mật khẩu có tác dụng gì?",
     "question_en": "What is the purpose of salt in password hashing?",
     "options_vi": [
-      "128",
-      "160",
-      "256",
-      "512"
+      "Tăng tốc độ tính toán hàm băm khi người dùng đăng nhập",
+      "Chống tấn công Rainbow table và đảm bảo mật khẩu giống nhau có hash khác nhau",
+      "Cho phép quản trị viên giải mã lại mật khẩu khi người dùng quên",
+      "Nén kích thước mật khẩu để tiết kiệm bộ nhớ cơ sở dữ liệu"
     ],
     "options_en": [
-      "128",
-      "160",
-      "256",
-      "512"
+      "Speed up hash computation when users log in",
+      "Prevent rainbow table attacks and ensure identical passwords produce different hashes",
+      "Allow administrators to decrypt passwords when users forget them",
+      "Compress password size to save database storage"
     ],
     "correct": 1,
-    "explanation_vi": "160 bits = 40 hex chars.",
-    "explanation_en": "160 bits = 40 hex chars."
+    "explanation_vi": "Salt là chuỗi ký tự ngẫu nhiên được thêm vào mật khẩu trước khi băm, giúp vô hiệu hóa bảng Rainbow và ngăn mật khẩu giống nhau có cùng mã băm.",
+    "explanation_en": "Salt is a random string added to the password prior to hashing, neutralizing rainbow tables and ensuring identical passwords yield different hashes."
   },
   {
     "id": "q292",
@@ -8388,10 +8388,10 @@
     "question_vi": "Digest size SHA-384?",
     "question_en": "SHA-384 digest size?",
     "options_vi": [
-      "256",
-      "384",
-      "512",
-      "128"
+      "256 bit",
+      "384 bit",
+      "512 bit",
+      "128 bit"
     ],
     "options_en": [
       "256 bits",
@@ -8400,8 +8400,8 @@
       "128 bits"
     ],
     "correct": 1,
-    "explanation_vi": "384 bits = 96 hex.",
-    "explanation_en": "384 bits = 96 hex."
+    "explanation_vi": "SHA-384 tạo ra chuỗi băm có kích thước 384 bit (tương đương 96 ký tự hex).",
+    "explanation_en": "SHA-384 produces a 384-bit hash digest (equivalent to 96 hexadecimal characters)."
   },
   {
     "id": "q383",
