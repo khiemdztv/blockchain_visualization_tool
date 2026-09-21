@@ -532,7 +532,6 @@ HubBlock was researched, developed, and deployed by **VTK Team**, students of th
 
 ### Project Achievements
 
-- **Consolation Prize (*Giải Khuyến khích*)** — **Vietnam Datathon: Data Storm 2025** (Nationwide Data Analytics & Application Competition)
 - **Student Scientific Research Project (*SVNCKH 2025*)** — Ho Chi Minh City University of Banking (HUB)
 - **Full-Stack Production Deployment** — Successfully implemented and deployed an interactive cryptographic simulation platform integrated with an intelligent RAG AI assistant.
 
