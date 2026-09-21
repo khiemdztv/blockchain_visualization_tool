@@ -63,6 +63,67 @@ ragEngine.init().then(() => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// GROQ MODELS DISCOVERY & FALLBACK HELPER
+// ═══════════════════════════════════════════════════════════════
+const PREFERRED_GROQ_ORDER = [
+  'llama-3.1-8b-instant',
+  'llama-3.3-70b-versatile',
+  'openai/gpt-oss-120b',
+  'openai/gpt-oss-20b',
+  'deepseek-r1-distill-llama-70b',
+  'gemma2-9b-it',
+  'mixtral-8x7b-32768',
+  'qwen/qwen3.8-27b',
+  'qwen-2.5-32b',
+];
+
+let cachedGroqModels = null;
+let lastGroqModelsFetch = 0;
+
+function getGroqModels(apiKey) {
+  const now = Date.now();
+  if (cachedGroqModels && (now - lastGroqModelsFetch < 300000)) {
+    return Promise.resolve(cachedGroqModels);
+  }
+  return new Promise((resolve) => {
+    const https = require('https');
+    const req = https.request({
+      hostname: 'api.groq.com',
+      port: 443,
+      path: '/openai/v1/models',
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    }, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const p = JSON.parse(data);
+          if (p.data && Array.isArray(p.data)) {
+            const chatModels = p.data
+              .map(m => m.id)
+              .filter(id => !id.includes('whisper') && !id.includes('guard') && !id.includes('safeguard'));
+            console.log('[Groq] Discovered available models:', chatModels);
+            if (chatModels.length > 0) {
+              cachedGroqModels = chatModels;
+              lastGroqModelsFetch = now;
+              return resolve(chatModels);
+            }
+          }
+        } catch (e) {}
+        resolve(null);
+      });
+    });
+    req.setTimeout(4000, () => { req.destroy(); resolve(null); });
+    req.on('error', () => resolve(null));
+    req.end();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
 // BLOCKCHAIN CORE (Mirrors Java: Block.java, Blockchain.java,
 //                  ProofOfWork.java, HashUtil.java)
 // ═══════════════════════════════════════════════════════════════
@@ -425,65 +486,6 @@ const server = http.createServer(async (req, res) => {
         valid: bc.isChainValid(),
         blockValidities: bc.getBlockValidities()
       });
-
-    // ── Groq Models Discovery & Fallback Helper ───────────────
-    const PREFERRED_GROQ_ORDER = [
-      'llama-3.1-8b-instant',
-      'llama-3.3-70b-versatile',
-      'openai/gpt-oss-120b',
-      'openai/gpt-oss-20b',
-      'deepseek-r1-distill-llama-70b',
-      'gemma2-9b-it',
-      'mixtral-8x7b-32768',
-      'qwen/qwen3.8-27b',
-      'qwen-2.5-32b',
-    ];
-
-    let cachedGroqModels = null;
-    let lastGroqModelsFetch = 0;
-
-    function getGroqModels(apiKey) {
-      const now = Date.now();
-      if (cachedGroqModels && (now - lastGroqModelsFetch < 300000)) {
-        return Promise.resolve(cachedGroqModels);
-      }
-      return new Promise((resolve) => {
-        const https = require('https');
-        const req = https.request({
-          hostname: 'api.groq.com',
-          port: 443,
-          path: '/openai/v1/models',
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-        }, (res) => {
-          let data = '';
-          res.on('data', c => data += c);
-          res.on('end', () => {
-            try {
-              const p = JSON.parse(data);
-              if (p.data && Array.isArray(p.data)) {
-                const chatModels = p.data
-                  .map(m => m.id)
-                  .filter(id => !id.includes('whisper') && !id.includes('guard') && !id.includes('safeguard'));
-                console.log('[Groq] Discovered available models:', chatModels);
-                if (chatModels.length > 0) {
-                  cachedGroqModels = chatModels;
-                  lastGroqModelsFetch = now;
-                  return resolve(chatModels);
-                }
-              }
-            } catch (e) {}
-            resolve(null);
-          });
-        });
-        req.setTimeout(4000, () => { req.destroy(); resolve(null); });
-        req.on('error', () => resolve(null));
-        req.end();
-      });
-    }
 
     // ── POST /api/chat ────────────────────────────────────────
     // AI chatbot endpoint — RAG-powered, proxies to Google Gemini / Groq / OpenAI
