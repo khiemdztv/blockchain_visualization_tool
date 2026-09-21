@@ -116,12 +116,11 @@ export const LANG = {
       ],
     },
     team: {
-      badge: "VTK Team", title: "VTK Team — Đội Ngũ Phát Triển", desc: "Nhóm sinh viên Khoa Khoa học Dữ liệu trong Kinh doanh (HUB) đam mê nghiên cứu và trực quan hóa công nghệ chuỗi khối, mật mã học",
-      supervisor: "Giảng viên hướng dẫn", members: "Thành viên nhóm VTK", membersDesc: "Sinh viên Khoa Khoa học Dữ liệu trong Kinh doanh",
-      compTitle: "Thành Tích & Cuộc Thi",
+      badge: "Nhóm Nghiên Cứu", title: "Về Nhóm", desc: "Nhóm sinh viên khoa Khoa học dữ liệu trong kinh doanh quan tâm tới việc trực quan hóa các khái niệm về chuỗi khối và an toàn bảo mật",
+      supervisor: "Giảng viên hướng dẫn", members: "Thành viên sinh viên", membersDesc: "Sinh viên Khoa Khoa học Dữ liệu trong Kinh doanh",
+      compTitle: "Thông Tin Cuộc Thi",
       compFields: { comp: "Cuộc thi", field: "Lĩnh vực", topic: "Đề tài", level: "Cấp độ", year: "Năm" },
-      competition: "Giải Khuyến Khích Vietnam Datathon - Data Storm 2025 & Đề Tài SVNCKH 2025",
-      compDesc: "VTK Team xuất sắc đạt Giải Khuyến khích tại cuộc thi Vietnam Datathon - Data Storm 2025. Đồng thời, HubBlock là công trình Nghiên cứu Khoa học Sinh viên (SVNCKH 2025) tại Trường Đại học Ngân hàng TP.HCM (HUB) dưới sự hướng dẫn của TS. Nguyễn Hoài Đức (Khoa Khoa học Dữ liệu trong Kinh doanh).",
+      competition: "Cuộc thi Nghiên Cứu Khoa Học Sinh Viên", compDesc: "Sản phẩm minh họa này được tạo cho cuộc thi SVNCKH, sự kiện thường niên khuyến khích sinh viên tiến hành nghiên cứu gốc và xây dựng các dự án sáng tạo.",
       faculty: "Khoa Khoa học Dữ liệu trong Kinh doanh", uni: "Trường Đại học Ngân hàng TP.HCM", uniShort: "Trường Đại học Ngân hàng TP.HCM"
     },
     merkle: {
@@ -365,12 +364,11 @@ export const LANG = {
       ],
     },
     team: {
-      badge: "VTK Team", title: "VTK Team — Development Team", desc: "Students from the Faculty of Data Science in Business (HUB) passionate about researching and visualizing blockchain and cryptography",
-      supervisor: "Faculty Supervisor", members: "VTK Team Members", membersDesc: "Students from the Faculty of Data Science in Business",
-      compTitle: "Achievements & Competitions",
+      badge: "Our Team", title: "About the Team", desc: "A group of students from the Data Science in Business Faculty interested in visualizing concepts of blockchain and security safety",
+      supervisor: "Faculty Supervisor", members: "Student Members", membersDesc: "Students from the Faculty of Data Science in Business",
+      compTitle: "Competition Details",
       compFields: { comp: "Competition", field: "Field", topic: "Topic", level: "Level", year: "Year" },
-      competition: "Vietnam Datathon 2025 Consolation Prize & SVNCKH 2025 Project",
-      compDesc: "VTK Team was honored with the Consolation Prize at the nationwide Vietnam Datathon - Data Storm 2025 competition. In addition, HubBlock is an outstanding Student Scientific Research Project (SVNCKH 2025) at Ho Chi Minh City University of Banking (HUB), under the supervision of Dr. Nguyen Hoai Duc (Faculty of Data Science in Business).",
+      competition: "Student Scientific Research Competition", compDesc: "This demo was created for the SVNCKH competition, an annual event encouraging students to conduct original research and build innovative projects.",
       faculty: "Faculty of Data Science in Business", uni: "Ho Chi Minh City University of Banking", uniShort: "Ho Chi Minh City University of Banking",
     },
     merkle: {

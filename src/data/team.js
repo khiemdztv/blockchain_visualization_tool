@@ -8,24 +8,9 @@ export const TEAM_DATA = [
 export const SUPERVISOR_DATA = {
   name: "TS. Nguyễn Hoài Đức",
   titleVi: "Giảng viên hướng dẫn", titleEn: "Faculty Supervisor",
-  deptVi: "Khoa Khoa học Dữ liệu trong Kinh doanh", deptEn: "Faculty of Data Science in Business",
+  deptVi: "Bộ môn Khoa học Máy tính", deptEn: "Department of Computer Science",
   uniVi: "Trường Đại học Ngân hàng TP.HCM", uniEn: "Ho Chi Minh City University of Banking (HUB)",
   avatar: "/images/avatar_duc.jpg?v=3",
-  descVi: "Giảng viên Khoa Khoa học Dữ liệu trong Kinh doanh (HUB). Hướng dẫn phương pháp nghiên cứu khoa học, định hướng nội dung mật mã học và phản biện kỹ thuật trong suốt quá trình thực hiện đề tài.",
-  descEn: "Lecturer at Faculty of Data Science in Business (HUB). Guided research methodology, provided cryptography content direction and technical critique throughout the project.",
+  descVi: "Hướng dẫn phương pháp nghiên cứu khoa học, định hướng nội dung mật mã học và phản biện kỹ thuật trong suốt quá trình thực hiện đề tài.",
+  descEn: "Guided research methodology, provided cryptography content direction and technical critique throughout the project.",
 };
-
-export const TEAM_ACHIEVEMENTS = [
-  {
-    titleVi: "Giải Khuyến khích Vietnam Datathon - Data Storm 2025",
-    titleEn: "Consolation Prize — Vietnam Datathon: Data Storm 2025",
-    descVi: "Thành tích xuất sắc của VTK Team tại cuộc thi phân tích và ứng dụng dữ liệu quy mô toàn quốc.",
-    descEn: "Outstanding achievement by VTK Team at the national data analytics competition.",
-  },
-  {
-    titleVi: "Đề tài Nghiên Cứu Khoa Học Sinh Viên (SVNCKH 2025)",
-    titleEn: "Student Scientific Research Project (SVNCKH 2025)",
-    descVi: "Đề tài nghiên cứu ứng dụng chuỗi khối và xây dựng nền tảng giáo dục tương tác HubBlock tại HUB.",
-    descEn: "Research on blockchain application and interactive educational system development at HUB.",
-  },
-];
