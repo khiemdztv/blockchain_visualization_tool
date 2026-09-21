@@ -348,10 +348,10 @@ const server = http.createServer(async (req, res) => {
       const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
       const openaiKey = (process.env.OPENAI_API_KEY || '').trim();
       const provider = groqKey ? 'groq' : geminiKey ? 'gemini' : openaiKey ? 'openai' : null;
-      let defaultModelName = 'Llama 3.3';
+      let defaultModelName = 'Llama 3.1';
       if (provider === 'gemini') defaultModelName = 'Gemini 2.0 Flash';
-      else if (provider === 'openai') defaultModelName = 'GPT-4o';
-      else if (provider === 'groq') defaultModelName = 'Llama 3.3';
+      else if (provider === 'openai') defaultModelName = 'GPT-4o-mini';
+      else if (provider === 'groq') defaultModelName = 'Llama 3.1';
 
       json(res, {
         googleClientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -425,6 +425,65 @@ const server = http.createServer(async (req, res) => {
         valid: bc.isChainValid(),
         blockValidities: bc.getBlockValidities()
       });
+
+    // ── Groq Models Discovery & Fallback Helper ───────────────
+    const PREFERRED_GROQ_ORDER = [
+      'llama-3.1-8b-instant',
+      'llama-3.3-70b-versatile',
+      'openai/gpt-oss-120b',
+      'openai/gpt-oss-20b',
+      'deepseek-r1-distill-llama-70b',
+      'gemma2-9b-it',
+      'mixtral-8x7b-32768',
+      'qwen/qwen3.8-27b',
+      'qwen-2.5-32b',
+    ];
+
+    let cachedGroqModels = null;
+    let lastGroqModelsFetch = 0;
+
+    function getGroqModels(apiKey) {
+      const now = Date.now();
+      if (cachedGroqModels && (now - lastGroqModelsFetch < 300000)) {
+        return Promise.resolve(cachedGroqModels);
+      }
+      return new Promise((resolve) => {
+        const https = require('https');
+        const req = https.request({
+          hostname: 'api.groq.com',
+          port: 443,
+          path: '/openai/v1/models',
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        }, (res) => {
+          let data = '';
+          res.on('data', c => data += c);
+          res.on('end', () => {
+            try {
+              const p = JSON.parse(data);
+              if (p.data && Array.isArray(p.data)) {
+                const chatModels = p.data
+                  .map(m => m.id)
+                  .filter(id => !id.includes('whisper') && !id.includes('guard') && !id.includes('safeguard'));
+                console.log('[Groq] Discovered available models:', chatModels);
+                if (chatModels.length > 0) {
+                  cachedGroqModels = chatModels;
+                  lastGroqModelsFetch = now;
+                  return resolve(chatModels);
+                }
+              }
+            } catch (e) {}
+            resolve(null);
+          });
+        });
+        req.setTimeout(4000, () => { req.destroy(); resolve(null); });
+        req.on('error', () => resolve(null));
+        req.end();
+      });
+    }
 
     // ── POST /api/chat ────────────────────────────────────────
     // AI chatbot endpoint — RAG-powered, proxies to Google Gemini / Groq / OpenAI
@@ -626,7 +685,7 @@ System has 3 roles: Admin (full management), Instructor (quiz management + view 
       let ragContext = '';
       let sources = [];
       try {
-        const ragK = adminDataContext ? 4 : 20; // fewer RAG chunks when admin data is present
+        const ragK = adminDataContext ? 3 : 5; // safe prompt size to prevent rate limits
         const relevantChunks = await ragEngine.searchSimilar(message.trim(), ragK);
         if (relevantChunks.length > 0) {
           ragContext = ragEngine.buildRAGContext(relevantChunks, isVi ? 'vi' : 'en');
@@ -690,47 +749,88 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
         { role: 'user', content: message.trim() },
       ];
 
-      // Groq model fallback chain (best → smallest, ordered by quality)
-      const GROQ_MODELS = [
-        'llama-3.3-70b-versatile',
-        'meta-llama/llama-4-scout-17b-16e-instruct',
-        'qwen/qwen3-32b',
-        'llama-3.1-8b-instant',
-      ];
+      // Build list of providers and models to try in priority order
+      const providersToTry = [];
+      if (groqKey) {
+        let groqList = await getGroqModels(groqKey);
+        if (!groqList || groqList.length === 0) {
+          groqList = PREFERRED_GROQ_ORDER;
+        } else {
+          // Sort discovered models according to preference
+          groqList.sort((a, b) => {
+            const idxA = PREFERRED_GROQ_ORDER.indexOf(a);
+            const idxB = PREFERRED_GROQ_ORDER.indexOf(b);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return 0;
+          });
+        }
+        providersToTry.push({
+          name: 'groq',
+          apiKey: groqKey,
+          hostname: 'api.groq.com',
+          path: '/openai/v1/chat/completions',
+          models: groqList,
+        });
+      }
+      if (geminiKey) {
+        providersToTry.push({
+          name: 'gemini',
+          apiKey: geminiKey,
+          hostname: 'generativelanguage.googleapis.com',
+          path: '/v1beta/openai/chat/completions',
+          models: ['gemini-2.0-flash', 'gemini-1.5-flash'],
+        });
+      }
+      if (openaiKey) {
+        providersToTry.push({
+          name: 'openai',
+          apiKey: openaiKey,
+          hostname: 'api.openai.com',
+          path: '/v1/chat/completions',
+          models: ['gpt-4o-mini', 'gpt-4o'],
+        });
+      }
 
-      const AI_CFG = {
-        groq:   { models: GROQ_MODELS, hostname: 'api.groq.com',                    path: '/openai/v1/chat/completions' },
-        gemini: { models: ['gemini-2.0-flash', 'gemini-1.5-flash'],  hostname: 'generativelanguage.googleapis.com', path: '/v1beta/openai/chat/completions' },
-        openai: { models: ['gpt-4o', 'gpt-4o-mini'],       hostname: 'api.openai.com',                    path: '/v1/chat/completions' },
-      };
-      const cfg = AI_CFG[provider];
-
-
-
-      // Try models in order, fallback on rate limit (429) or quota errors
+      // Try providers and models in order, fallback on ANY error
       let reply = '';
-      let usedModel = cfg.models[0];
-      for (const modelName of cfg.models) {
-        try {
-          const result = await callModel(modelName);
-          reply = result.content;
-          usedModel = result.model;
-          break;
-        } catch (err) {
-          const isRateLimit = err.statusCode === 429 || /rate.limit|quota|limit|too many/i.test(err.message);
-          if (isRateLimit && modelName !== cfg.models[cfg.models.length - 1]) {
-            console.warn(`[Chat] ${modelName} rate-limited, trying next model...`);
+      let usedModel = '';
+      let lastErr = null;
+
+      providerLoop:
+      for (const prov of providersToTry) {
+        for (const modelName of prov.models) {
+          try {
+            console.log(`[Chat] Trying provider: ${prov.name}, model: ${modelName}...`);
+            const result = await callModel(prov, modelName);
+            reply = result.content;
+            usedModel = result.model;
+            break providerLoop;
+          } catch (err) {
+            lastErr = err;
+            console.warn(`[Chat] ${prov.name}/${modelName} failed (${err.statusCode || 'err'}: ${err.message}), trying next model...`);
             continue;
           }
-          throw err;
         }
       }
-      console.log(`[Chat] Used model: ${usedModel}`);
 
+      if (!reply) {
+        const errDetail = lastErr ? lastErr.message : 'No response from AI provider';
+        console.error('[Chat] All models/providers failed:', errDetail);
+        json(res, {
+          error: isVi
+            ? `Hệ thống AI hiện đang bận hoặc gặp sự cố (${errDetail}). Vui lòng thử lại sau giây lát.`
+            : `AI service is temporarily busy or encountered an error (${errDetail}). Please try again shortly.`
+        }, 503);
+        return;
+      }
+
+      console.log(`[Chat] Used model: ${usedModel}`);
       json(res, { reply, sources, model: usedModel });
 
       // Helper: call one model
-      function callModel(modelName) {
+      function callModel(prov, modelName) {
         return new Promise((resolve, reject) => {
           const https = require('https');
           const payload = JSON.stringify({
@@ -741,11 +841,11 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
           });
           let data = '';
           const req2 = https.request({
-            hostname: cfg.hostname, port: 443,
-            path: cfg.path, method: 'POST',
+            hostname: prov.hostname, port: 443,
+            path: prov.path, method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`,
+              'Authorization': `Bearer ${prov.apiKey}`,
               'Content-Length': Buffer.byteLength(payload),
             },
           }, (r) => {
@@ -763,7 +863,7 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
               } catch(e) { reject(new Error('Parse error: ' + data.slice(0,100))); }
             });
           });
-          req2.setTimeout(30000, () => { req2.destroy(); reject(new Error('Timeout')); });
+          req2.setTimeout(25000, () => { req2.destroy(); reject(new Error('AI request timeout')); });
           req2.on('error', reject);
           req2.write(payload);
           req2.end();

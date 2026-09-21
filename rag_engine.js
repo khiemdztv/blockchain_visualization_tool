@@ -138,6 +138,7 @@ async function init() {
     const raw = fs.readFileSync(INDEX_PATH, 'utf8');
     store = JSON.parse(raw);
     console.log(`[RAG] Loaded ${store.length} chunks from rag_index.json`);
+    prepareChunks();
     initialized = true;
   } catch (e) {
     console.error('[RAG] Failed to load index:', e.message);
@@ -153,17 +154,26 @@ function tokenize(text) {
     .filter(w => w.length > 1);
 }
 
-// Pre-build IDF map on init for faster keyword search
+// Pre-build IDF map and cache tokenized chunks for ultra-fast search
 let idfMap = null;
-function buildIDF() {
-  if (idfMap) return;
+function prepareChunks() {
+  if (idfMap || !store || store.length === 0) return;
   idfMap = {};
   const N = store.length;
   const df = {};
   for (const chunk of store) {
-    const words = new Set(tokenize(chunk.text));
-    for (const w of words) {
-      df[w] = (df[w] || 0) + 1;
+    chunk._tokens = tokenize(chunk.text);
+    chunk._docLen = chunk._tokens.length;
+    chunk._lowerText = chunk.text.toLowerCase();
+    chunk._titleTokens = tokenize(chunk.title || '');
+    chunk._tf = {};
+    const seenWords = new Set();
+    for (const t of chunk._tokens) {
+      chunk._tf[t] = (chunk._tf[t] || 0) + 1;
+      if (!seenWords.has(t)) {
+        seenWords.add(t);
+        df[t] = (df[t] || 0) + 1;
+      }
     }
   }
   for (const w in df) {
@@ -172,69 +182,80 @@ function buildIDF() {
 }
 
 function keywordSearch(query, k = 4) {
-  buildIDF();
+  prepareChunks();
   const qTokens = tokenize(query);
-  if (qTokens.length === 0) return [];
+  if (qTokens.length === 0 || !store || store.length === 0) return [];
+  const lowerQuery = query.toLowerCase().trim();
 
-  const scored = store.map(chunk => {
-    const text = chunk.text.toLowerCase();
-    const docTokens = tokenize(chunk.text);
-    const docLen = docTokens.length;
-    const avgDL = 300; // approximate average doc length in tokens
-    const kParam = 1.2;
-    const b = 0.75;
+  const scored = [];
+  const avgDL = 300;
+  const kParam = 1.2;
+  const b = 0.75;
+
+  for (const chunk of store) {
     let score = 0;
-
-    // BM25 scoring
-    const tf = {};
-    for (const t of docTokens) tf[t] = (tf[t] || 0) + 1;
     for (const qt of qTokens) {
-      const termFreq = tf[qt] || 0;
-      if (termFreq === 0) continue;
-      const idf = idfMap[qt] || 0;
-      score += idf * (termFreq * (kParam + 1)) / (termFreq + kParam * (1 - b + b * docLen / avgDL));
+      const termFreq = chunk._tf ? chunk._tf[qt] : 0;
+      if (termFreq) {
+        const idf = idfMap[qt] || 0;
+        score += idf * (termFreq * (kParam + 1)) / (termFreq + kParam * (1 - b + b * (chunk._docLen || 300) / avgDL));
+      }
+      // Bonus if keyword appears in paper/book title
+      if (chunk._titleTokens && chunk._titleTokens.includes(qt)) {
+        score += 3;
+      }
     }
 
     // Bonus for exact phrase match
-    if (text.includes(query.toLowerCase().trim())) {
+    if (score > 0 && chunk._lowerText && chunk._lowerText.includes(lowerQuery)) {
       score += 5;
     }
 
-    return { ...chunk, score };
-  });
+    if (score > 0) {
+      scored.push({
+        chunk_id: chunk.chunk_id,
+        filename: chunk.filename,
+        title: chunk.title,
+        page: chunk.page,
+        text: chunk.text,
+        score,
+      });
+    }
+  }
 
   scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, k).filter(c => c.score > 0).map(({ embedding, ...rest }) => rest);
+  return scored.slice(0, k);
 }
 
 // ─── Search for similar chunks ────────────────────────────────────
 async function searchSimilar(query, k = 4) {
-  if (store.length === 0) return [];
+  if (!store || store.length === 0) return [];
 
-  // Try vector search first if embedding API available
+  // Try vector search first IF embedding API available AND chunk embeddings exist
   const hasEmbedKey = (process.env.GEMINI_API_KEY || '').trim() || (process.env.OPENAI_API_KEY || '').trim();
-  if (hasEmbedKey) {
+  const hasEmbeddings = store[0] && Array.isArray(store[0].embedding) && store[0].embedding.length > 0;
+
+  if (hasEmbedKey && hasEmbeddings) {
     try {
       const queryVec = await embedText(query);
-
-      // Dimension mismatch → fall through to keyword search
-      if (store[0].embedding && store[0].embedding.length !== queryVec.length) {
-        console.warn(`[RAG] Dimension mismatch (stored=${store[0].embedding.length}, query=${queryVec.length}). Using keyword search.`);
-      } else {
+      if (store[0].embedding && store[0].embedding.length === queryVec.length) {
         const scored = store.map(chunk => ({
-          ...chunk,
+          chunk_id: chunk.chunk_id,
+          filename: chunk.filename,
+          title: chunk.title,
+          page: chunk.page,
+          text: chunk.text,
           score: cosineSimilarity(queryVec, chunk.embedding),
         }));
         scored.sort((a, b) => b.score - a.score);
-        const topK = scored.slice(0, k);
-        return topK.map(({ embedding, ...rest }) => rest);
+        return scored.slice(0, k);
       }
     } catch (e) {
-      console.warn('[RAG] Embedding failed, using keyword search:', e.message);
+      console.warn('[RAG] Vector search failed, falling back to keyword search:', e.message);
     }
   }
 
-  // Fallback: keyword/BM25 search (no API needed)
+  // Fallback: fast & robust BM25 keyword search (offline, zero API latency)
   return keywordSearch(query, k);
 }
 
@@ -243,7 +264,6 @@ function buildRAGContext(chunks, lang = 'vi') {
   if (!chunks || chunks.length === 0) return '';
 
   const isVi = lang === 'vi';
-  const sourceLabel = isVi ? 'NGUỒN' : 'SOURCE';
 
   const contextParts = chunks.map((chunk, i) => {
     const pageInfo = chunk.page ? (isVi ? `, tr. ${chunk.page}` : `, p. ${chunk.page}`) : '';

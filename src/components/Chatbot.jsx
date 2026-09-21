@@ -275,6 +275,8 @@ export default function Chatbot({ lang = 'vi', currentPage = 'home' }) {
               return word;
             })
             .join(' ');
+        } else if (displayModel.toLowerCase().startsWith('gpt-oss')) {
+          displayModel = 'GPT-OSS';
         } else if (displayModel.toLowerCase().startsWith('gpt-')) {
           displayModel = displayModel.replace(/^gpt-/i, 'GPT-');
         } else if (displayModel.toLowerCase().includes('llama')) {
@@ -285,8 +287,14 @@ export default function Chatbot({ lang = 'vi', currentPage = 'home' }) {
           } else {
             displayModel = 'Llama 3.1';
           }
+        } else if (displayModel.toLowerCase().includes('deepseek')) {
+          displayModel = 'DeepSeek R1';
+        } else if (displayModel.toLowerCase().includes('gemma')) {
+          displayModel = 'Gemma 2';
+        } else if (displayModel.toLowerCase().includes('mixtral')) {
+          displayModel = 'Mixtral 8x7B';
         } else if (displayModel.toLowerCase().includes('qwen')) {
-          displayModel = 'Qwen 3';
+          displayModel = 'Qwen';
         }
         setActiveModel(displayModel);
       }
@@ -305,7 +313,7 @@ export default function Chatbot({ lang = 'vi', currentPage = 'home' }) {
       const errMsg = {
         id: Date.now() + 1,
         role: 'bot',
-        content: isKeyError ? t.errorKey : t.error,
+        content: isKeyError ? t.errorKey : (err.message && !err.message.startsWith('HTTP') ? err.message : t.error),
         ts: Date.now(),
         isError: true,
       };
