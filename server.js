@@ -660,28 +660,48 @@ ${recentAttemptsStr || 'No exam attempts found'}${searchUserContext}`;
 - Politely reply: 'I do not have access to real-time administrative statistics. You must log in as an Admin or Instructor to view these statistics in the management panel.'`;
       }
 
-      // ── Web knowledge context ──────────────────────────────────
+      // ── Web & Team knowledge context ───────────────────────────
       const webKnowledge = isVi
-        ? `\nVỀ WEBSITE HubBlock:
-Website giáo dục Blockchain tương tác gồm các tính năng:
-- Trang chủ (Home): Giới thiệu tổng quan, điểm nổi bật
-- Demo Hash (SHA-256): Nhập text → thấy hash realtime, minh họa thuật toán băm
-- Mining: Mô phỏng đào block realtime (nonce, difficulty, Proof of Work)
-- RSA Demo: Mã hóa/giải mã RSA, chữ ký số, tạo key pair
-- Quiz & Exam: Ôn tập trắc nghiệm theo chủ đề, thi thử 40 câu có thời gian, cấp chứng chỉ
-- Hồ sơ (Profile): Xem tiến độ học, lịch sử thi, chứng chỉ
-- AI Chatbot: Trợ lý AI học blockchain, được huấn luyện trên 14 tài liệu nghiên cứu
-Hệ thống có 3 vai trò: Admin (quản trị toàn bộ), Giảng viên (quảng lý quiz + xem tiến độ học sinh), Học sinh (học + làm bài).`
-        : `\nABOUT HubBlock WEBSITE:
-An interactive Blockchain education web app with features:
-- Home: Overview and highlights
-- Hash Demo (SHA-256): Type text → see hash in realtime, hash algorithm visualization
-- Mining: Realtime block mining simulation (nonce, difficulty, Proof of Work)
-- RSA Demo: RSA encrypt/decrypt, digital signatures, key pair generation
-- Quiz & Exam: Topic-based practice quizzes, 40-question timed exams, certificate issuance
-- Profile: View progress, exam history, certificates
-- AI Chatbot: AI learning assistant trained on 14 research documents
-System has 3 roles: Admin (full management), Instructor (quiz management + view student progress), Student (learn + take quizzes).`;
+        ? `\n\nTHÔNG TIN DỰ ÁN, ĐỘI NGŨ PHÁT TRIỂN & GIẢNG VIÊN HƯỚNG DẪN:
+- Đơn vị đào tạo & nghiên cứu: Khoa Khoa học Dữ liệu trong Kinh doanh (Faculty of Data Science in Business), Trường Đại học Ngân hàng TP.HCM (HUB).
+- Giảng viên hướng dẫn: TS. Nguyễn Hoài Đức — Giảng viên Khoa Khoa học Dữ liệu trong Kinh doanh, Trường Đại học Ngân hàng TP.HCM (HUB) (Email: ducnh@hub.edu.vn). Thầy định hướng nghiên cứu khoa học, phản biện kỹ thuật và đồng hành cùng nhóm trong suốt quá trình phát triển đề tài.
+- Nhóm phát triển dự án: VTK Team (Email: vtkteam2005@gmail.com), gồm 3 sinh viên Khoa Khoa học Dữ liệu trong Kinh doanh:
+  1. Lâm Tuấn Vũ — Trưởng nhóm (Team Lead), Lập trình viên Backend (phụ trách server Node.js, cài đặt thuật toán băm SHA-256, logic chuỗi khối, Cây Merkle, RESTful API và cơ sở dữ liệu).
+  2. Đỗ Gia Khiêm — Lập trình viên Frontend (thiết kế và lập trình giao diện người dùng React, hoạt họa trực quan hóa tương tác, mô phỏng Hash, Mining, RSA, Merkle Tree và thiết kế responsive đa thiết bị).
+  3. Nguyễn Vũ Thắng — Nghiên cứu & Tài liệu (Research & Documentation, nghiên cứu các chuẩn mật mã học FIPS/NIST, biên soạn hệ thống 500 câu hỏi quiz, nội dung học tập và thuyết minh đề tài nghiên cứu).
+- Thành tích nổi bật của nhóm VTK Team:
+  + Đạt Giải Khuyến khích tại cuộc thi toàn quốc "Vietnam Datathon - Data Storm 2025".
+  + Đề tài Nghiên cứu Khoa học Sinh viên (SVNCKH 2025) tại Trường Đại học Ngân hàng TP.HCM (HUB).
+  + Thiết kế và triển khai thành công nền tảng giáo dục tương tác HubBlock tích hợp trợ lý AI RAG học tập chuyên sâu từ 14 tài liệu nghiên cứu quốc tế về Blockchain và Mật mã học.
+- Các tính năng chính của HubBlock:
+  + Trang chủ (Home): Giới thiệu tổng quan, điểm nổi bật
+  + Demo Hash (SHA-256): Băm dữ liệu realtime, minh họa hiệu ứng Avalanche
+  + Mining: Mô phỏng đào khối theo cơ chế Bằng chứng Công việc (Proof of Work), tùy chỉnh độ khó 1–5
+  + Mã hóa RSA: Trực quan hóa tạo cặp key, mã hóa/giải mã, chữ ký số (Digital Signature)
+  + Cây Merkle (Merkle Tree): Dựng cây Merkle tương tác thời gian thực, trực quan hóa đường dẫn chứng minh (Merkle Proof) và phát hiện giả mạo dữ liệu
+  + Quiz & Khảo sát: 500 câu hỏi song ngữ 9 chủ đề, thi thử 40 câu có bấm giờ và cấp chứng chỉ
+  + AI Chatbot: Trợ lý AI học Blockchain với công nghệ RAG từ 14 tài liệu nghiên cứu.
+Khi người dùng hỏi về giảng viên hướng dẫn (TS. Nguyễn Hoài Đức), nhóm phát triển (VTK Team), các thành viên (Lâm Tuấn Vũ, Đỗ Gia Khiêm, Nguyễn Vũ Thắng) hoặc thành tích của nhóm (Giải Khuyến khích Vietnam Datathon - Data Storm 2025, SVNCKH), hãy luôn trả lời chi tiết, chính xác, tự hào và nhiệt tình.`
+        : `\n\nPROJECT, DEVELOPMENT TEAM & SUPERVISOR INFORMATION:
+- Institution: Faculty of Data Science in Business, Ho Chi Minh City University of Banking (HUB).
+- Faculty Supervisor: Dr. Nguyen Hoai Duc (TS. Nguyễn Hoài Đức) — Lecturer at the Faculty of Data Science in Business, Ho Chi Minh City University of Banking (HUB) (Email: ducnh@hub.edu.vn). Dr. Duc provided research methodology guidance, cryptographic theory direction, and technical critique.
+- Development Team: VTK Team (Email: vtkteam2005@gmail.com), consisting of 3 students from the Faculty of Data Science in Business:
+  1. Lam Tuan Vu (Lâm Tuấn Vũ) — Team Lead & Backend Developer (Node.js server, SHA-256 implementation, blockchain core logic, Merkle Tree, RESTful APIs, and database).
+  2. Do Gia Khiem (Đỗ Gia Khiêm) — Frontend Developer (React UI, interactive animations, Hash demo, Mining, RSA, Merkle Tree visualizer, and responsive design).
+  3. Nguyen Vu Thang (Nguyễn Vũ Thắng) — Research & Documentation (cryptographic standards research, 500 bilingual quiz questions, educational articles, and scientific project documentation).
+- VTK Team Notable Achievements:
+  + Consolation Prize (Giải Khuyến khích) at the nationwide "Vietnam Datathon - Data Storm 2025" competition.
+  + Student Scientific Research Competition (SVNCKH 2025) project at Ho Chi Minh City University of Banking (HUB).
+  + Successfully developed and launched the full-stack HubBlock educational platform featuring interactive cryptographic simulations and an intelligent RAG AI Chatbot trained on 14 international research papers.
+- HubBlock Key Features:
+  + Home: Highlights & live hash demonstration
+  + Hash Demo: Real-time SHA-256 computation and Avalanche effect visualizer
+  + Mining: Proof-of-Work simulation with difficulty controls (1–5)
+  + RSA Cryptography: Step-by-step key generation, encryption/decryption, and digital signatures
+  + Merkle Tree: Real-time tree construction, tamper detection, and Merkle Proof visualizer
+  + Quiz & Exam: 500 bilingual questions across 9 topics, 40-question timed exams, and digital certificate issuance
+  + AI Chatbot: RAG-powered learning assistant with 14 research document citations.
+When users ask about the faculty supervisor (Dr. Nguyen Hoai Duc), development team (VTK Team), members (Lam Tuan Vu, Do Gia Khiem, Nguyen Vu Thang), or achievements (Vietnam Datathon 2025, SVNCKH), provide this complete, accurate, and proud information.`;
 
       // ── RAG: Retrieve relevant chunks ──────────────────────────
       let ragContext = '';

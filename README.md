@@ -326,18 +326,23 @@ Each question is bilingual (Vietnamese/English) with:
 
 ## Team
 
-Developed by students of the **Faculty of Data Science in Business** at Ho Chi Minh City University of Banking (HUB), established 1976.
+Developed by **VTK Team**, students of the **Faculty of Data Science in Business** at Ho Chi Minh City University of Banking (HUB), established 1976.
 
 | Name | Role |
 |---|---|
-| TS. Nguyen Hoai Duc | Faculty Supervisor — Department of Computer Science |
+| TS. Nguyen Hoai Duc | Faculty Supervisor — Faculty of Data Science in Business |
 | Lam Tuan Vu | Team Lead, Backend Developer |
 | Do Gia Khiem | Frontend Developer |
 | Nguyen Vu Thang | Research and Documentation |
 
+### Achievements
+- 🥉 **Consolation Prize (Giải Khuyến khích)** — **Vietnam Datathon: Data Storm 2025**
+- 🎓 **Student Scientific Research Project (SVNCKH 2025)** — Ho Chi Minh City University of Banking (HUB)
+- 🚀 Successfully built and deployed the full-stack interactive Blockchain Visualization Platform integrated with an intelligent RAG AI Chatbot.
+
 **Contact**
-- Email: vtkteam2005@gmail.com
-- Supervisor: ducnh@hub.edu.vn
+- Team Email: vtkteam2005@gmail.com
+- Supervisor Email: ducnh@hub.edu.vn
 
 ---
 
