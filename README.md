@@ -1,223 +1,480 @@
-# HubBlock — Interactive Blockchain Education Platform
+# HubBlock: Interactive Cryptographic Simulation and Blockchain Education Platform
 
-**HubBlock** is a full-stack interactive educational web application designed to visualize cryptographic algorithms and blockchain mechanisms. Users can explore SHA-256 hashing, RSA encryption, Merkle Trees, Proof-of-Work mining, and test their knowledge through an integrated quiz & certification system.
+HubBlock is a full-stack educational and scientific platform engineered to visualize cryptographic algorithms, distributed consensus mechanisms, and blockchain architectures. The system provides real-time mathematical simulations of SHA-256 hashing, RSA asymmetric cryptography, Merkle Tree structures, and Proof-of-Work (PoW) mining, coupled with an evaluation and certification engine and a Retrieval-Augmented Generation (RAG) AI assistant.
 
-Built for the **Student Scientific Research Competition (SVNCKH 2025)** at Ho Chi Minh City University of Banking.
+The project was conducted under the **Student Scientific Research Competition (SVNCKH 2025)** at Ho Chi Minh City University of Banking (HUB).
 
-> 🌐 **Live Demo:** [hubblock.onrender.com](https://hubblock.onrender.com)
-
---
-
-## Overview
-
-The project addresses the challenge of making complex cryptographic and blockchain concepts accessible to students through hands-on, visual demonstrations. Rather than relying on theoretical explanations alone, HubBlock provides real-time, interactive simulations that allow users to observe and experiment with the mathematical properties underpinning modern blockchain security.
-
-The application supports both **Vietnamese** and **English**, and features both **light** and **dark** display themes.
+- **Production Deployment:** [hubblock.onrender.com](https://hubblock.onrender.com)
+- **Primary Domain:** Blockchain Architecture, Applied Cryptography, Distributed Systems, Interactive Pedagogy
 
 ---
 
-## Features
+## Table of Contents
 
-### 🏠 Home Page
-Landing page with a live SHA-256 hash demo, animated particle background, and quick navigation to all major features.
+1. [Executive Overview](#executive-overview)
+2. [System Architecture](#system-architecture)
+3. [Core Technical Modules](#core-technical-modules)
+   - [SHA-256 Cryptographic Engine](#sha-256-cryptographic-engine)
+   - [Proof-of-Work Consensus and Chain Integrity](#proof-of-work-consensus-and-chain-integrity)
+   - [RSA Asymmetric Cryptography and Digital Signatures](#rsa-asymmetric-cryptography-and-digital-signatures)
+   - [Merkle Tree and Cryptographic Verification Paths](#merkle-tree-and-cryptographic-verification-paths)
+   - [Examination, Assessment, and Certification System](#examination-assessment-and-certification-system)
+   - [Role-Based Access Control and System Administration](#role-based-access-control-and-system-administration)
+   - [Retrieval-Augmented Generation (RAG) AI Assistant](#retrieval-augmented-generation-rag-ai-assistant)
+4. [Technology Stack](#technology-stack)
+5. [Directory Structure](#directory-structure)
+6. [API Specification](#api-specification)
+7. [Environment and Configuration](#environment-and-configuration)
+8. [Installation and Execution](#installation-and-execution)
+9. [Research Team and Academic Supervision](#research-team-and-academic-supervision)
+10. [License](#license)
 
-### #️⃣ Hash Demo (Mô phỏng Hash)
-- **Real-time SHA-256 hashing** — Any input text is hashed instantly, demonstrating the fixed 256-bit (64 hex character) output.
-- **Avalanche Effect Visualizer** — Illustrates how a single character change causes ~50% of the output bits to flip.
-- **Step-by-step SHA-256 computation** — View the intermediate steps of the algorithm (message schedule, compression rounds).
+---
 
-### ⛏️ Mining & Blockchain (Khai thác)
-- **Mining Simulator** — Simulates Proof-of-Work with real-time nonce search and adjustable difficulty (1–5).
-- **Blockchain Explorer** — Add blocks, tamper with data, and observe how modifications invalidate subsequent blocks.
-- **Difficulty Lab** — Demonstrates why Bitcoin auto-adjusts difficulty every 2,016 blocks (~2 weeks).
-- **Mining Theory** — Educational content explaining PoW mechanics, hash rate, and economic incentives.
+## Executive Overview
 
-### 🔐 RSA Encryption (Mã hoá RSA)
-- **Key Generation Demo** — Visualize RSA key pair generation with prime numbers p and q.
-- **Encrypt/Decrypt** — Step-by-step RSA encryption and decryption with mathematical formulas.
-- **Digital Signature** — Sign messages and verify signatures using RSA.
-- **Math Breakdown** — Detailed view of modular exponentiation, Euler's totient, and the Extended Euclidean Algorithm.
+Understanding blockchain technology requires comprehending foundational cryptographic primitives, decentralized state synchronization, and adversarial threat models. Traditional pedagogical methodologies often rely on abstract mathematical formulas or static code samples, presenting a significant barrier for students and researchers.
 
-### 🌳 Merkle Tree
-- **Interactive Tree Builder** — Enter transaction data and watch the Merkle Tree build in real time.
-- **Proof Verification** — Select any leaf node and visualize the Merkle proof path to the root.
-- **Tamper Detection** — Modify a transaction and see how the root hash changes.
-- **Zoomable Canvas** — Pan and zoom the tree visualization for large datasets.
-- **Theory Section** — Educational content on Merkle Trees, SPV verification, and use in Bitcoin/Ethereum.
+HubBlock bridges this theoretical gap by offering dynamic, step-by-step visual computations directly in the browser, validated against a deterministic Node.js backend and a reference Java core implementation. The platform is designed with bilingual support (Vietnamese and English) and dual visual themes (dark and light mode).
 
-### 📝 Quiz & Certification System (Quiz)
-- **500 bilingual questions** across 9 topics (Hash, Mining, RSA, Merkle, Blockchain Basics, Cryptography, P2P Network, Smart Contracts, Security).
-- **3 difficulty levels** — Easy, Medium, Hard — selectable per topic.
-- **Practice Mode** — Study at your own pace with instant feedback and explanations.
-- **Exam Mode** — Timed 40-question test (60 minutes) with automated grading.
-  - Distribution: 16 easy + 16 medium + 8 hard questions, randomly shuffled.
-  - Pass threshold: 70% (28/40).
-- **Progress Tracking** — Circular progress indicator on each topic card showing % completed.
-- **PDF Certificate** — Auto-generated "Foundation of Blockchain" certificate upon passing, with custom display name and unique verification code.
-- **Detailed Result Review** — Review all answers with correct answers and explanations after submission.
+```
++-------------------------------------------------------------------------------+
+|                               HUBBLOCK ECOSYSTEM                              |
++-------------------------------------------------------------------------------+
+| [Client Tier]           React 18 + Vite + TailwindCSS + HTML5 Canvas          |
+| [Server Tier]           Pure Node.js HTTP/REST APIs + Server-Sent Events (SSE)|
+| [Storage Tier]          MongoDB Atlas (Users, Audits, Exams, Question Bank)   |
+| [Cryptographic Engine]  SHA-256 Rounds, RSA Keygen, Merkle Tree Root & Proofs |
+| [AI Engine]             Groq / Gemini / OpenAI + BM25 Vector RAG (14 Papers)  |
+| [RBAC & Audit]          Role-Based Access (Admin / Instructor / Student)      |
++-------------------------------------------------------------------------------+
+```
 
-### 👤 User Authentication
-- **Email/Password registration & login** with bcrypt password hashing.
-- **Google OAuth login** via Google Identity Services (GIS).
-- **JWT-based session management** — Secure API access with Bearer tokens.
-- **User Profile page** — View stats, exam history, and certificates.
+---
 
-### 🤖 AI Chatbot Assistant
-An integrated conversational assistant powered by **OpenAI GPT-4o-mini** with a RAG (Retrieval-Augmented Generation) engine. It answers questions about blockchain, cryptography, and application usage in both Vietnamese and English, using indexed educational content for accurate responses.
+## System Architecture
+
+The system follows a decoupled layered architecture comprising presentation, application gateway, cryptographic execution cores, database persistence, and an intelligent knowledge retrieval pipeline.
+
+```mermaid
+flowchart TD
+    subgraph Client["Presentation Layer (Client Browser)"]
+        UI["React 18 Single Page Application"]
+        State["Authentication & Theme Context"]
+        Canvas["Interactive Visualizers (Hash, Mining, RSA, Merkle)"]
+        ChatbotUI["Conversational RAG Chatbot Interface"]
+    end
+
+    subgraph Server["Application & API Gateway (Node.js)"]
+        Router["HTTP Request Router & Middleware"]
+        AuthMiddleware["JWT Verification & RBAC Guard"]
+        CryptoCore["Native Cryptographic Simulator (SHA-256, PoW, Merkle)"]
+        SSEStream["Server-Sent Events (SSE) Mining Stream"]
+    end
+
+    subgraph Persistence["Persistence Layer (MongoDB Atlas)"]
+        UserCol[("Users & Roles")]
+        LogCol[("Activity Audit Logs")]
+        QuizCol[("500-Question Bank & Progress")]
+        ExamCol[("Test Attempts & Certificates")]
+    end
+
+    subgraph Intelligence["AI & RAG Knowledge Pipeline"]
+        RAGEngine["RAG Engine (BM25 Index / In-Memory Vector Store)"]
+        Corpus[("14 Academic Papers & Standards Corpus (4,572 Chunks)")]
+        LLM["Multi-Model Orchestrator (Groq / Gemini / OpenAI)"]
+    end
+
+    UI --> Router
+    ChatbotUI --> Router
+    Router --> AuthMiddleware
+    AuthMiddleware --> CryptoCore
+    AuthMiddleware --> SSEStream
+    AuthMiddleware --> UserCol
+    AuthMiddleware --> LogCol
+    AuthMiddleware --> QuizCol
+    AuthMiddleware --> ExamCol
+    Router --> RAGEngine
+    RAGEngine --> Corpus
+    RAGEngine --> LLM
+```
+
+---
+
+## Core Technical Modules
+
+### SHA-256 Cryptographic Engine
+
+The SHA-256 engine demonstrates the deterministic property, fixed-length digest generation (256 bits / 64 hexadecimal characters), and the avalanche effect as standardized in FIPS PUB 180-4.
+
+```mermaid
+flowchart LR
+    Input["Input Message M"] --> Pad["Padding (1 + k zeros + 64-bit length)"]
+    Pad --> Parse["512-bit Block Segmentation"]
+    Parse --> W["Message Schedule Expansion W(0..63)"]
+    W --> Rounds["64 Compression Rounds (Ch, Maj, Σ0, Σ1, σ0, σ1)"]
+    Rounds --> StateUpdate["Intermediate Hash State Addition"]
+    StateUpdate --> Digest["256-bit Final Hash Output"]
+```
+
+- **Step-by-Step Round Inspection:** Inspects message expansion, addition modulo $2^{32}$, and logical bitwise functions across all 64 rounds.
+- **Avalanche Effect Visualizer:** Quantifies bit variation between two marginally altered inputs (e.g., flipping a single bit), illustrating an average output bit variation of approximately 50%.
+
+---
+
+### Proof-of-Work Consensus and Chain Integrity
+
+The mining module illustrates the Hashcash Proof-of-Work mechanism popularized by Bitcoin. Users can explore block proposal, nonce discovery, difficulty adjustment, and cascading chain invalidation upon data modification.
+
+```mermaid
+flowchart TD
+    Start["Block Assembly (Index, Timestamp, Data, PrevHash)"] --> InitNonce["Initialize Nonce = 0"]
+    InitNonce --> Compute["Compute SHA-256(Block Header + Nonce)"]
+    Compute --> Check{"Hash < Target (Difficulty Prefix)?"}
+    Check -- No --> IncNonce["Nonce = Nonce + 1"]
+    IncNonce --> Compute
+    Check -- Yes --> Validated["Block Solved & Appended to Chain"]
+    Validated --> TamperCheck{"Data Tampered in Past Block?"}
+    TamperCheck -- Yes --> Broken["Subsequent Block Hashes Invalidated"]
+    TamperCheck -- No --> ChainValid["Chain Integrity Maintained"]
+```
+
+- **Adjustable Difficulty:** Configurable difficulty levels (1 to 5 leading hexadecimal zeros). Each level scales target search complexity by a factor of 16.
+- **Real-Time Mining Stream:** Server-Sent Events (SSE) provide live telemetry of hashing rates, candidate nonces, and elapsed computation time.
+- **Dynamic Invalidation Lab:** Mutating data within an arbitrary block recalculates its hash, breaking the cryptographic link ($H_{prev} \neq H_{actual}$) for all subsequent blocks until re-mined.
+
+---
+
+### RSA Asymmetric Cryptography and Digital Signatures
+
+This module exposes the mathematical mechanics of public-key cryptography and digital signatures based on the integer factorization problem.
+
+- **Key Generation:** Select prime numbers $p$ and $q$, compute modulus $n = p \cdot q$ and Euler's totient $\phi(n) = (p - 1)(q - 1)$. Derive public exponent $e$ such that $\gcd(e, \phi(n)) = 1$, and calculate private exponent $d \equiv e^{-1} \pmod{\phi(n)}$ using the Extended Euclidean Algorithm.
+- **Encryption and Decryption:** Modular exponentiation demonstrations:
+  $$c \equiv m^e \pmod{n}, \quad m \equiv c^d \pmod{n}$$
+- **Digital Signatures:** Message signing ($s \equiv H(m)^d \pmod{n}$) and signature verification ($v \equiv s^e \pmod{n} = H(m)$), confirming authenticity and non-repudiation.
+
+---
+
+### Merkle Tree and Cryptographic Verification Paths
+
+The Merkle Tree module implements binary cryptographic trees used in distributed ledgers for efficient and secure verification of large data sets (SPV nodes).
+
+```mermaid
+flowchart TD
+    Tx0["Tx 0"] --> H0["Hash(Tx 0)"]
+    Tx1["Tx 1"] --> H1["Hash(Tx 1)"]
+    Tx2["Tx 2"] --> H2["Hash(Tx 2)"]
+    Tx3["Tx 3"] --> H3["Hash(Tx 3)"]
+
+    H0 & H1 --> H01["Parent Node Hash 0-1"]
+    H2 & H3 --> H23["Parent Node Hash 2-3"]
+
+    H01 & H23 --> Root["Merkle Root Hash"]
+
+    subgraph Verification["Merkle Proof Path for Tx 0"]
+        direction TB
+        VLeaf["Target: Tx 0"] --> VSibling["Sibling: Hash(Tx 1)"]
+        VSibling --> VUncle["Uncle: Hash 2-3"]
+        VUncle --> VRoot["Computed Root == Stored Root"]
+    end
+```
+
+- **Interactive Binary Reduction:** Constructs a complete Merkle Tree from arbitrary transaction lists, handling odd node duplication per cryptographic standard.
+- **Merkle Proof Verification Path:** Highlights the logarithmic verification path $O(\log_2 N)$, proving inclusion without requiring the complete ledger transaction history.
+- **Real-Time Root Recalculation:** Modifying a transaction dynamically propagates changes up the branch to update the root hash.
+
+---
+
+### Examination, Assessment, and Certification System
+
+A rigorous evaluation system enables knowledge validation with persistent tracking.
+
+- **Question Bank:** 500 bilingual (Vietnamese/English) questions categorized into 9 domains:
+  1. Hash Functions and SHA-256
+  2. Mining and Proof-of-Work
+  3. RSA Asymmetric Encryption
+  4. Merkle Trees
+  5. Blockchain Fundamentals
+  6. Cryptography Fundamentals
+  7. Peer-to-Peer Networks and Nodes
+  8. Smart Contracts
+  9. Blockchain Security and Threat Models
+- **Practice Mode:** Topic-specific training with instant feedback and explanatory rationales.
+- **Examination Mode:**
+  - 40 randomly sampled questions stratified by difficulty (16 Easy, 16 Medium, 8 Hard).
+  - 60-minute countdown timer with automated grading.
+  - Passing score: 70% (28/40 correct).
+- **Automated Digital Certification:** Successful candidates receive a verified certificate with a cryptographic identifier, exportable to vector PDF via jsPDF and verifiable through a public endpoint (`/api/cert/verify/:code`).
+
+---
+
+### Role-Based Access Control and System Administration
+
+The platform implements Role-Based Access Control (RBAC) with three tiers:
+
+```
+[Student]       Practice quizzes, attempt timed exams, view personal profile and earned certificates.
+   |
+[Instructor]    Full Question Bank CRUD management, review student progress and pass/fail distributions.
+   |
+[Administrator] Global telemetry, user account administration, role escalation, immutable activity logs.
+```
+
+- **Instructor Portal:** Interface for creating, editing, and deleting questions with bilingual validation, and monitoring cohort performance analytics.
+- **Administrator Dashboard:** Comprehensive metrics tracking user registration timelines, exam completion rates, certificate counts, and an audit trail tracking security-critical actions (logins, role updates, test submissions).
+
+---
+
+### Retrieval-Augmented Generation (RAG) AI Assistant
+
+The platform integrates an intelligent assistant built on a localized RAG architecture to answer questions about blockchain theory and platform features.
+
+```mermaid
+flowchart TD
+    UserQuery["User Query (Vietnamese / English)"] --> RoleDetection["JWT Token Extraction & Role Detection"]
+    RoleDetection --> SearchEngine["Hybrid BM25 / Vector Search"]
+    CorpusDB[("14 Academic Papers & Project Knowledge (4,572 Chunks)")] --> SearchEngine
+
+    SearchEngine --> TopK["Top-k Relevant Chunks & Citations"]
+    TopK --> PromptAssembler["Dynamic Context & Prompt Assembly"]
+    RoleDetection --> AdminContext["Live DB Metrics & Audit Logs (Admin/Instructor Only)"]
+    AdminContext --> PromptAssembler
+
+    PromptAssembler --> ModelRouter["Multi-Model LLM Gateway"]
+    ModelRouter --> Groq["Primary: Groq API (gpt-oss-120b / llama-3.3-70b / llama-3.1-8b)"]
+    ModelRouter -. Fallback .-> Gemini["Secondary: Google Gemini"]
+    ModelRouter -. Fallback .-> OpenAI["Tertiary: OpenAI GPT-4o-mini"]
+    Groq --> Response["Structured Answer with Document Citations"]
+    Gemini --> Response
+    OpenAI --> Response
+```
+
+- **Document Corpus:** Indexed from 14 international research publications, whitepapers, and technical specifications, including:
+  - *Bitcoin: A Peer-to-Peer Electronic Cash System* (Satoshi Nakamoto)
+  - *Ethereum Whitepaper* (Vitalik Buterin)
+  - *FIPS PUB 180-4: Secure Hash Standard (SHS)* (NIST)
+  - *RFC 3447: Public-Key Cryptography Standards (PKCS) #1: RSA Cryptography Specifications*
+  - Comprehensive university reference curricula on distributed ledger technologies.
+- **Dynamic System Context:** The assistant is supplied with real-time project metadata, development team records, and academic supervision details. For privileged roles, it can synthesize real-time user metrics and system statistics.
 
 ---
 
 ## Technology Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18 + Vite 5 |
-| Styling | TailwindCSS + Custom CSS |
-| Backend | Node.js (native `http`, `crypto`, `fs`) |
-| Database | MongoDB Atlas (Mongoose ODM) |
-| Authentication | JWT + bcryptjs + Google OAuth |
-| AI | OpenAI GPT-4o-mini + RAG engine |
-| PDF Generation | jsPDF |
-| Deployment | Render |
-
-The blockchain core logic is implemented from scratch and mirrors the accompanying Java reference implementation (`Block.java`, `Blockchain.java`, `ProofOfWork.java`, `HashUtil.java`).
+| Layer | Component | Specification / Library | Purpose |
+|---|---|---|---|
+| **Frontend UI** | Framework | React 18.2.0 | Reactive component-based interface |
+| | Tooling | Vite 5.2.0 | Optimized build pipeline and HMR |
+| | Styling | TailwindCSS 3.4.19 + CSS Modules | Visual design system |
+| | Visualizations | HTML5 Canvas + Lucide Icons | Real-time rendering of crypto algorithms |
+| | Document Export | jsPDF 4.2.1 + html2canvas 1.4.1 | Client-side certificate generation |
+| **Backend API** | Runtime | Node.js 18+ (ES6+) | Application gateway and REST server |
+| | Architecture | Pure Node.js standard built-ins (`http`, `crypto`, `fs`) | Cryptographic parity with core specifications |
+| | Streaming | Server-Sent Events (SSE) | Real-time mining telemetry |
+| **Data & Auth** | Persistence | MongoDB Atlas via Mongoose 9.4.1 | Schema modeling and database storage |
+| | Authentication | JWT (jsonwebtoken 9.0.3) + bcryptjs 3.0.3 | Token-based session management |
+| | SSO | Google Identity Services (GIS) | OAuth2 user authentication |
+| **AI & RAG** | Inference API | Groq Cloud SDK / REST API | Ultra-low latency LLM inference |
+| | LLM Models | `openai/gpt-oss-120b`, `llama-3.3-70b`, `llama-3.1-8b` | Generative question answering |
+| | Secondary LLMs | Google Gemini 1.5 Flash / OpenAI GPT-4o-mini | Failover model orchestration |
+| | RAG Index | BM25 Lexical + Cosine Similarity Vector Store | Grounded domain knowledge retrieval |
+| **Java Core** | Reference Core | Java 17 (`java.security.*`) | Reference academic implementation |
 
 ---
 
-## Project Structure
+## Directory Structure
 
 ```
 blockchain_visualization_tool/
-├── server.js                     # Node.js backend: blockchain core + HTTP API + static serving
-├── db.js                         # MongoDB Atlas connection (Mongoose)
-├── index.html                    # HTML entry point (includes Google GSI script)
-├── vite.config.js                # Vite configuration with API proxy
-├── package.json
-├── .env                          # Environment variables (not committed)
+├── server.js                     # Primary Node.js HTTP server, API routes, static serving
+├── db.js                         # MongoDB Atlas database connection initialization
+├── rag_engine.js                 # In-memory retrieval engine (BM25 + vector similarity)
+├── rag_ingest.js                 # Corpus ingestion and chunk indexing pipeline
+├── rag_index.json                # Pre-built knowledge base index (4,572 chunks)
+├── seed_admin.js                 # Default administrative account seeder
+├── vite.config.js                # Vite client configuration and reverse-proxy rules
+├── package.json                  # Dependencies and npm script definitions
 │
 ├── middleware/
-│   └── auth.js                   # JWT verification middleware
+│   └── auth.js                   # JWT token extraction, verification, and RBAC guard
 ├── models/
-│   ├── User.js                   # User schema (email, Google OAuth, avatar)
-│   ├── QuizProgress.js           # Per-question practice progress
-│   ├── TestAttempt.js            # Exam attempt records
-│   └── Certificate.js            # Issued certificates with verification codes
+│   ├── User.js                   # User account schema, credentials, and assigned role
+│   ├── ActivityLog.js            # Audit trail recording security and operational events
+│   ├── Question.js               # Bilingual quiz question schema and answer keys
+│   ├── QuizProgress.js           # Per-user practice mode tracking records
+│   ├── TestAttempt.js            # Examination submissions, timestamps, and scores
+│   └── Certificate.js            # Issued credentials with cryptographic verification codes
 ├── routes/
-│   ├── auth.js                   # Auth routes: register, login, Google OAuth, profile
-│   └── quiz.js                   # Quiz routes: questions, topics, progress, exam, certificates
-│
-├── rag_engine.js                 # RAG search engine for AI chatbot
-├── rag_ingest.js                 # Script to build RAG index from documents
-├── rag_index.json                # Pre-built RAG vector index
+│   ├── admin.js                  # Administrator telemetry, user roles, and audit endpoints
+│   ├── instructor.js             # Question bank CRUD and cohort performance endpoints
+│   ├── auth.js                   # User registration, authentication, and profile endpoints
+│   └── quiz.js                   # Public question distribution, exam flows, and certification
 │
 ├── src/
-│   ├── App.jsx                   # Root component: routing, navigation, theme/language
-│   ├── main.jsx                  # React entry point
+│   ├── App.jsx                   # Master application controller and route mapping
+│   ├── main.jsx                  # React runtime initialization
 │   ├── context/
-│   │   └── AuthContext.jsx       # Global auth state (token, user, login/logout)
+│   │   └── AuthContext.jsx       # Global authentication state provider
 │   ├── data/
-│   │   ├── lang.js               # Bilingual string definitions (VI/EN)
-│   │   ├── team.js               # Team member and supervisor data
-│   │   └── quiz_questions.json   # 500 bilingual quiz questions
+│   │   ├── lang.js               # Comprehensive bilingual dictionary (VI / EN)
+│   │   ├── team.js               # Development team profiles and research supervisor data
+│   │   └── quiz_questions.json   # Base collection of 500 bilingual exam items
 │   ├── views/
-│   │   ├── HomeView.jsx          # Landing page with live SHA-256 demo
-│   │   ├── HashDemoView.jsx      # Hash property demonstrations & avalanche effect
-│   │   ├── MiningView.jsx        # Mining simulator, explorer, difficulty lab
-│   │   ├── rsa/
-│   │   │   ├── RSADemoView.jsx   # RSA encryption main view
-│   │   │   └── components/       # RSA sub-components (keygen, encrypt, sign, math)
-│   │   ├── QuizView.jsx          # Quiz system: topics, practice, exam, results, certificate
-│   │   ├── ProfileView.jsx       # User profile, stats, exam history
-│   │   ├── AboutProjectView.jsx  # Project description
-│   │   └── AboutTeamView.jsx     # Team profiles and contact
+│   │   ├── HomeView.jsx          # Landing page with interactive cryptographic showcase
+│   │   ├── HashDemoView.jsx      # SHA-256 round visualizer and avalanche effect lab
+│   │   ├── MiningView.jsx        # PoW mining simulator, explorer, and difficulty scaling
+│   │   ├── QuizView.jsx          # Interactive testing, timed examination, and certificate UI
+│   │   ├── ProfileView.jsx       # User portfolio, examination history, and issued credentials
+│   │   ├── AdminView.jsx         # Administrative dashboard, user management, audit logs
+│   │   ├── InstructorView.jsx    # Instructor question bank authoring and analytics
+│   │   ├── AboutProjectView.jsx  # Research context, problem statement, and methodology
+│   │   ├── AboutTeamView.jsx     # Team biographies, supervisor info, and achievements
+│   │   └── rsa/
+│   │       ├── RSADemoView.jsx   # RSA encryption, decryption, and signature workspace
+│   │       └── components/       # Step-by-step keygen, math breakdown, modular arithmetic
 │   ├── components/
-│   │   ├── Chatbot.jsx           # AI chatbot overlay (GPT-4o-mini + RAG)
-│   │   ├── LoginModal.jsx        # Login/Register modal with Google OAuth
-│   │   ├── BlockchainCanvas.jsx  # Canvas-based blockchain rendering
-│   │   ├── ParticleBackground.jsx # Animated particle background
-│   │   ├── Footer.jsx
-│   │   ├── merkle/               # Merkle Tree components (tree, node, input, zoom, theory)
-│   │   └── ui/                   # Reusable UI components (Button, Card, Badge, Input)
-│   ├── styles/
-│   │   └── global.css            # All application styles
-│   └── utils/
+│   │   ├── Chatbot.jsx           # RAG AI assistant floating interface with source citations
+│   │   ├── LoginModal.jsx        # Credentials authentication and Google OAuth dialog
+│   │   ├── BlockchainCanvas.jsx  # Dynamic canvas visualizer for block integrity
+│   │   ├── ParticleBackground.jsx# Hardware-accelerated canvas background
+│   │   ├── Footer.jsx            # Institutional branding and links
+│   │   ├── merkle/               # Tree rendering, proof animation, tamper testing
+│   │   └── ui/                   # Reusable atomic UI primitives
+│   └── styles/
+│       └── global.css            # Base stylesheet and theme tokens
 │
-├── public/                       # Static assets (logos, avatars)
-├── generate_questions.js         # Quiz question generation script
-│
-├── Block.java                    # Java reference: block data model
-├── Blockchain.java               # Java reference: chain logic
-├── BlockchainServer.java         # Java reference: server
-├── ProofOfWork.java              # Java reference: mining
-└── HashUtil.java                 # Java reference: hashing utilities
+├── java-core/                    # Independent Java reference implementation
+│   ├── Block.java                # Immutable block record structure
+│   ├── Blockchain.java           # Chain validation and state management
+│   ├── BlockchainServer.java     # Standalone Java HTTP server
+│   ├── ProofOfWork.java          # PoW mining loop
+│   └── HashUtil.java             # Cryptographic utility wrappers
+└── public/                       # Static media, icons, and institutional emblems
 ```
 
 ---
 
-## Backend API Reference
+## API Specification
 
-The Node.js server runs on port `3001` by default (configurable via `PORT`).
+The server exposes a RESTful API on port `3001` (or the port defined by `PORT`).
 
-### Blockchain & Crypto
+### Cryptographic Simulation and Blockchain
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/chain` | Returns the full blockchain state |
-| POST | `/api/block/add` | Mines and appends a new block |
-| POST | `/api/block/tamper` | Tampers with a block's data (breaks integrity) |
-| POST | `/api/block/restore` | Re-mines a block and all subsequent blocks |
-| GET | `/api/mine/stream` | SSE stream for real-time mining animation |
-| POST | `/api/hash` | Computes SHA-256 of an input string |
-| POST | `/api/hash/steps` | Returns intermediate SHA-256 computation steps |
-| POST | `/api/merkle` | Builds a Merkle tree from a list of transactions |
-| POST | `/api/difficulty` | Sets the mining difficulty (1–5) |
-| POST | `/api/reset` | Resets the blockchain to genesis state |
-| GET | `/api/validate` | Validates chain integrity |
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/chain` | Public | Retrieves current chain state and block metadata |
+| `POST` | `/api/block/add` | Public | Mines and appends a new block |
+| `POST` | `/api/block/tamper` | Public | Modifies a block's payload to demonstrate chain invalidation |
+| `POST` | `/api/block/restore` | Public | Re-mines the invalid block and re-links subsequent blocks |
+| `GET` | `/api/mine/stream` | Public | Server-Sent Events (SSE) stream of real-time mining nonces |
+| `POST` | `/api/hash` | Public | Computes the SHA-256 digest of an arbitrary payload |
+| `POST` | `/api/hash/steps` | Public | Returns detailed 64-round intermediate computation variables |
+| `POST` | `/api/merkle` | Public | Generates a Merkle Tree and root hash from transaction array |
+| `POST` | `/api/difficulty` | Public | Updates the active Proof-of-Work difficulty target (1 to 5) |
+| `POST` | `/api/reset` | Public | Restores the blockchain to its initial Genesis Block state |
+| `GET` | `/api/validate` | Public | Performs cryptographic verification across the full chain |
 
-### Authentication
+### Authentication and User Management
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/auth/register` | Register with email + password |
-| POST | `/api/auth/login` | Login with email + password |
-| POST | `/api/auth/google` | Login/register with Google OAuth ID token |
-| GET | `/api/auth/me` | Get current user profile (requires JWT) |
-| GET | `/api/config` | Returns Google Client ID for frontend |
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Public | Registers a new account with email, password, and display name |
+| `POST` | `/api/auth/login` | Public | Authenticates credentials and returns a signed JWT token |
+| `POST` | `/api/auth/google` | Public | Authenticates Google OAuth ID tokens |
+| `GET` | `/api/auth/me` | Bearer JWT | Retrieves profile data for the authenticated account |
+| `GET` | `/api/config` | Public | Supplies public configuration parameters (Google Client ID) |
 
-### Quiz & Certification
+### Assessment and Certification
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/quiz/questions` | Get questions (filterable by `topic`, `difficulty`) |
-| GET | `/api/quiz/topics` | Get topic statistics (question counts per difficulty) |
-| POST | `/api/quiz/progress` | Save practice answer progress (requires auth) |
-| GET | `/api/quiz/progress` | Get user progress stats by topic & difficulty |
-| POST | `/api/exam/start` | Start a timed 40-question exam (requires auth) |
-| POST | `/api/exam/submit` | Submit exam answers for grading (requires auth) |
-| GET | `/api/exam/history` | Get user's past exam attempts |
-| GET | `/api/cert/my` | Get user's earned certificates |
-| GET | `/api/cert/verify/:code` | Verify a certificate by its unique code |
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/quiz/questions` | Public | Fetches questions filtered by topic and difficulty |
+| `GET` | `/api/quiz/topics` | Public | Aggregates item counts across the 9 subject domains |
+| `POST` | `/api/quiz/progress` | Bearer JWT | Records per-item practice answers and learning progress |
+| `GET` | `/api/quiz/progress` | Bearer JWT | Retrieves user mastery statistics across topics |
+| `POST` | `/api/exam/start` | Bearer JWT | Generates an active 40-question examination session |
+| `POST` | `/api/exam/submit` | Bearer JWT | Grades submitted examination answers and evaluates pass status |
+| `GET` | `/api/exam/history` | Bearer JWT | Fetches historical examination attempts and scores |
+| `GET` | `/api/cert/my` | Bearer JWT | Lists all certificates awarded to the authenticated user |
+| `GET` | `/api/cert/verify/:code` | Public | Validates authenticity of an issued certificate by identifier |
 
-### AI Chatbot
+### Instructor Management
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/chat` | Send message to GPT-4o-mini with RAG context |
-| GET | `/health` | Health check endpoint |
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/instructor/questions` | Instructor / Admin | Lists question items with pagination and domain filters |
+| `POST` | `/api/instructor/questions` | Instructor / Admin | Creates a new bilingual question item |
+| `PUT` | `/api/instructor/questions/:qid` | Instructor / Admin | Updates an existing question item |
+| `DELETE` | `/api/instructor/questions/:qid` | Instructor / Admin | Deletes a question item from the active bank |
+| `GET` | `/api/instructor/students` | Instructor / Admin | Returns student cohort progress and assessment analytics |
+
+### System Administration and Auditing
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/admin/stats` | Admin | Provides global platform metrics, user cohorts, and pass rates |
+| `GET` | `/api/admin/users` | Admin | Returns paginated user accounts with search and role filters |
+| `GET` | `/api/admin/users/:id` | Admin | Returns detailed profile, test history, and certificates of a user |
+| `PATCH` | `/api/admin/users/:id/role` | Admin | Updates account role (`student`, `instructor`, `admin`) |
+| `GET` | `/api/admin/logs` | Admin | Returns paginated audit log entries with action and date filters |
+
+### Intelligent AI Assistant
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `POST` | `/api/chat` | Public / Auth | Submits message to the RAG pipeline with role-aware context |
+| `GET` | `/health` | Public | Verifies server operational status and database connectivity |
 
 ---
 
-## Getting Started
+## Environment and Configuration
+
+The application loads environment variables natively from a `.env` file located in the root directory.
+
+```env
+# Database Persistence
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/hubblock?retryWrites=true&w=majority
+
+# Security and Cryptography
+JWT_SECRET=replace_with_a_secure_random_string_of_sufficient_length
+
+# LLM Providers for RAG Engine (At least one key is required for AI Chatbot)
+GROQ_API_KEY=gsk_your_groq_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+OPENAI_API_KEY=sk-your_openai_api_key_here
+
+# Single Sign-On (Optional)
+GOOGLE_CLIENT_ID=your_google_oauth_client_id.apps.googleusercontent.com
+
+# Server Networking
+PORT=3001
+```
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `MONGODB_URI` | String | Yes | MongoDB Atlas connection URI for data persistence |
+| `JWT_SECRET` | String | Yes | Secret key used for signing and verifying HMAC-SHA256 JWT tokens |
+| `GROQ_API_KEY` | String | Recommended | Groq Cloud API key for low-latency model inference |
+| `GEMINI_API_KEY` | String | Optional | Google Gemini API key as a secondary inference provider |
+| `OPENAI_API_KEY` | String | Optional | OpenAI API key as a fallback inference provider |
+| `GOOGLE_CLIENT_ID` | String | Optional | Google OAuth 2.0 Web Client ID for Google Authentication |
+| `PORT` | Number | Optional | Server port (defaults to `3001` if unset) |
+
+---
+
+## Installation and Execution
 
 ### Prerequisites
 
-- **Node.js** 18 or later
-- **npm** 9 or later
-- **MongoDB Atlas** account (free tier works)
-- **OpenAI API key** (required for AI Chatbot)
-- **Google OAuth Client ID** (required for Google login)
+- **Node.js:** Version 18.0.0 or higher
+- **npm:** Version 9.0.0 or higher
+- **MongoDB Atlas Cluster:** Accessible instance with connection credentials
+- **API Key:** Groq Cloud, Google AI Studio, or OpenAI
 
 ### Installation
+
+Clone the repository and install project dependencies:
 
 ```bash
 git clone https://github.com/khiemdztv/blockchain_visualization_tool.git
@@ -225,131 +482,72 @@ cd blockchain_visualization_tool
 npm install
 ```
 
-### Environment Configuration
+### Development Mode
 
-Create a `.env` file in the project root. The server reads it natively — no `dotenv` package needed.
-
-```env
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>
-JWT_SECRET=your_jwt_secret_here
-GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
-OPENAI_API_KEY=your_openai_api_key_here
-PORT=3001
-```
-
-| Variable | Required | Description |
-|---|---|---|
-| `MONGODB_URI` | Yes | MongoDB Atlas connection string |
-| `JWT_SECRET` | Yes | Secret key for signing JWT tokens |
-| `GOOGLE_CLIENT_ID` | Optional | Google OAuth Client ID (enables Google login) |
-| `OPENAI_API_KEY` | Optional | OpenAI API key (enables AI Chatbot) |
-| `PORT` | Optional | Server port (default: `3001`) |
-
-> Without `MONGODB_URI`, quiz progress, authentication, and certification features are disabled. All visualization features still work.
-
-### Running in Development
+To start both the Node.js backend server and the Vite development server concurrently:
 
 ```bash
 npm run dev
 ```
 
-This starts both the Node.js backend and Vite dev server concurrently:
-- **Frontend:** `http://localhost:5173`
-- **Backend API:** `http://localhost:3001`
+- Client Application: `http://localhost:5173`
+- Backend API Server: `http://localhost:3001`
 
-### Building for Production
+### Production Build and Execution
+
+Compile the frontend assets into the `dist/` directory:
 
 ```bash
 npm run build
 ```
 
-Outputs a production bundle to `dist/`. The server is configured to serve this directory as static files.
-
-### Running in Production
+Run the production server, which hosts both the API endpoints and serves static distribution assets:
 
 ```bash
 npm start
 ```
 
-Serves both the frontend and API from port `3001` (or `PORT`).
-
 ---
 
-## Deployment
+## Research Team and Academic Supervision
 
-The application is deployed on **Render** as a Web Service.
+HubBlock was researched, developed, and deployed by **VTK Team**, students of the **Faculty of Data Science in Business** at **Ho Chi Minh City University of Banking (HUB)**.
 
-1. Connect the GitHub repository to Render.
-2. Set **Build Command:** `npm install && npm run build`
-3. Set **Start Command:** `npm start`
-4. Add all environment variables (`MONGODB_URI`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `OPENAI_API_KEY`) in the Render Environment settings.
+### Academic Supervisor
 
----
+- **Dr. Nguyen Hoai Duc (TS. Nguyễn Hoài Đức)**
+  - Position: Faculty Supervisor
+  - Department: Faculty of Data Science in Business (*Khoa Khoa học Dữ liệu trong Kinh doanh*)
+  - Institution: Ho Chi Minh City University of Banking (HUB)
+  - Role: Research methodology oversight, cryptographic theory guidance, and technical critique
+  - Contact: `ducnh@hub.edu.vn`
 
-## Quiz System Details
+### Development Team — VTK Team
 
-### Topics (9 total)
-| ID | Topic (VI) | Topic (EN) |
-|---|---|---|
-| `hash` | Hàm băm & SHA-256 | Hash Functions & SHA-256 |
-| `mining` | Khai thác & PoW | Mining & Proof of Work |
-| `rsa` | Mã hoá RSA | RSA Encryption |
-| `merkle` | Cây Merkle | Merkle Trees |
-| `blockchain_basics` | Cơ bản Blockchain | Blockchain Basics |
-| `crypto_fundamentals` | Mật mã học | Cryptography Fundamentals |
-| `network` | Mạng P2P & Node | P2P Network & Nodes |
-| `smart_contracts` | Smart Contract | Smart Contracts |
-| `security` | Bảo mật | Security & Attacks |
+| Member | Academic Affiliation | Project Role | Responsibilities |
+|---|---|---|---|
+| **Lam Tuan Vu**<br>*(Lâm Tuấn Vũ)* | Faculty of Data Science in Business, HUB | Team Lead<br>Backend Developer | Node.js architecture, SHA-256 implementation, blockchain consensus logic, Merkle Tree structures, RESTful APIs, and database integration |
+| **Do Gia Khiem**<br>*(Đỗ Gia Khiêm)* | Faculty of Data Science in Business, HUB | Frontend Developer | React user interface, responsive layout design, HTML5 Canvas animation engines, cryptographic simulation visualizers, and state management |
+| **Nguyen Vu Thang**<br>*(Nguyễn Vũ Thắng)* | Faculty of Data Science in Business, HUB | Research & Documentation | Cryptographic standards research (FIPS/NIST), 500 bilingual assessment question bank authoring, RAG document corpus compilation, and project documentation |
 
-### Question Format
-Each question is bilingual (Vietnamese/English) with:
-- 4 multiple-choice options
-- Correct answer index
-- Detailed explanation in both languages
+### Project Achievements
 
-### Exam Rules
-- **40 random questions** (16 easy + 16 medium + 8 hard)
-- **60-minute time limit**
-- **70% pass threshold** (28/40 correct)
-- Upon passing: PDF certificate generated with custom display name and unique verification code
+- **Consolation Prize (*Giải Khuyến khích*)** — **Vietnam Datathon: Data Storm 2025** (Nationwide Data Analytics & Application Competition)
+- **Student Scientific Research Project (*SVNCKH 2025*)** — Ho Chi Minh City University of Banking (HUB)
+- **Full-Stack Production Deployment** — Successfully implemented and deployed an interactive cryptographic simulation platform integrated with an intelligent RAG AI assistant.
 
----
+### Contact Information
 
-## Development Notes
-
-- Mining difficulty ranges from **1 to 5**. Each increment multiplies average hashing attempts by 16×. Nonce search is capped at 2,000,000 attempts.
-- The Blockchain Explorer starts with a **Genesis Block** and supports adding, tampering, and restoring blocks.
-- The RAG engine indexes educational documents for AI chatbot context. Rebuild the index with `node rag_ingest.js`.
-- Quiz questions can be regenerated or extended via `generate_questions.js`.
-
----
-
-## Team
-
-Developed by **VTK Team**, students of the **Faculty of Data Science in Business** at Ho Chi Minh City University of Banking (HUB), established 1976.
-
-| Name | Role |
-|---|---|
-| TS. Nguyen Hoai Duc | Faculty Supervisor — Faculty of Data Science in Business |
-| Lam Tuan Vu | Team Lead, Backend Developer |
-| Do Gia Khiem | Frontend Developer |
-| Nguyen Vu Thang | Research and Documentation |
-
-### Achievements
-- 🥉 **Consolation Prize (Giải Khuyến khích)** — **Vietnam Datathon: Data Storm 2025**
-- 🎓 **Student Scientific Research Project (SVNCKH 2025)** — Ho Chi Minh City University of Banking (HUB)
-- 🚀 Successfully built and deployed the full-stack interactive Blockchain Visualization Platform integrated with an intelligent RAG AI Chatbot.
-
-**Contact**
-- Team Email: vtkteam2005@gmail.com
-- Supervisor Email: ducnh@hub.edu.vn
+- **Team Email:** `vtkteam2005@gmail.com`
+- **Supervisor Email:** `ducnh@hub.edu.vn`
+- **Institutional Address:** Ho Chi Minh City University of Banking, 36 Ton That Dam, District 1, Ho Chi Minh City, Vietnam
 
 ---
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the **MIT License**. See the `LICENSE` file for full terms.
 
----
-
-*HubBlock — SVNCKH 2025 — Ho Chi Minh City University of Banking*
+```
+Copyright (c) 2025 VTK Team — Faculty of Data Science in Business, Ho Chi Minh City University of Banking (HUB)
+```
