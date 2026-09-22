@@ -4,6 +4,8 @@ const testAttemptSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   questions: [{
     questionId: String,
+    // Original option indexes in the order presented to this attempt.
+    optionOrder: { type: [Number], default: () => [0, 1, 2, 3] },
     selectedAnswer: Number,
     correct: Boolean,
   }],

@@ -1,5 +1,6 @@
 const path_m = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const QuizProgress = require('../models/QuizProgress');
 const TestAttempt = require('../models/TestAttempt');
 const Certificate = require('../models/Certificate');
@@ -39,10 +40,36 @@ function json(res, data, code = 200) {
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = crypto.randomInt(i + 1);
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+const DEFAULT_OPTION_ORDER = [0, 1, 2, 3];
+
+function normalizeOptionOrder(order) {
+  if (!Array.isArray(order) || order.length !== 4 || new Set(order).size !== 4 ||
+      order.some(index => !Number.isInteger(index) || index < 0 || index > 3)) {
+    return DEFAULT_OPTION_ORDER;
+  }
+  return order;
+}
+
+function presentQuestion(question, optionOrder, includeCorrect = false) {
+  const order = normalizeOptionOrder(optionOrder);
+  const presented = {
+    id: question.id,
+    topic: question.topic,
+    difficulty: question.difficulty,
+    question_vi: question.question_vi,
+    question_en: question.question_en,
+    options_vi: order.map(index => question.options_vi[index]),
+    options_en: order.map(index => question.options_en[index]),
+  };
+
+  if (includeCorrect) presented.correct = order.indexOf(question.correct);
+  return presented;
 }
 
 async function handleQuizRoute(req, res, path, parsed) {
@@ -53,7 +80,10 @@ async function handleQuizRoute(req, res, path, parsed) {
     let filtered = ALL_QUESTIONS;
     if (topic) filtered = filtered.filter(q => q.topic === topic);
     if (difficulty) filtered = filtered.filter(q => q.difficulty === difficulty);
-    json(res, { total: filtered.length, questions: filtered });
+    const questions = shuffle(filtered).map(question =>
+      presentQuestion(question, shuffle(DEFAULT_OPTION_ORDER), true)
+    );
+    json(res, { total: questions.length, questions });
     return true;
   }
 
@@ -128,24 +158,26 @@ async function handleQuizRoute(req, res, path, parsed) {
     const easy = shuffle(ALL_QUESTIONS.filter(q => q.difficulty === 'easy')).slice(0, 16);
     const medium = shuffle(ALL_QUESTIONS.filter(q => q.difficulty === 'medium')).slice(0, 16);
     const hard = shuffle(ALL_QUESTIONS.filter(q => q.difficulty === 'hard')).slice(0, 8);
-    const examQuestions = shuffle([...easy, ...medium, ...hard]);
+    const examQuestions = shuffle([...easy, ...medium, ...hard]).map(question => ({
+      question,
+      optionOrder: shuffle(DEFAULT_OPTION_ORDER),
+    }));
 
     const attempt = await TestAttempt.create({
       userId,
-      questions: examQuestions.map(q => ({ questionId: q.id, selectedAnswer: -1, correct: false })),
+      questions: examQuestions.map(({ question, optionOrder }) => ({
+        questionId: question.id,
+        optionOrder,
+        selectedAnswer: -1,
+        correct: false,
+      })),
       startedAt: new Date(),
     });
 
     // Return questions WITHOUT correct answers
-    const safeQuestions = examQuestions.map(q => ({
-      id: q.id,
-      topic: q.topic,
-      difficulty: q.difficulty,
-      question_vi: q.question_vi,
-      question_en: q.question_en,
-      options_vi: q.options_vi,
-      options_en: q.options_en,
-    }));
+    const safeQuestions = examQuestions.map(({ question, optionOrder }) =>
+      presentQuestion(question, optionOrder)
+    );
 
     logActivity(userId, 'exam_start', { attemptId: attempt._id }, req);
     json(res, { attemptId: attempt._id, questions: safeQuestions, startedAt: attempt.startedAt, timeLimit: 3600 });
@@ -181,9 +213,13 @@ async function handleQuizRoute(req, res, path, parsed) {
     const gradedQuestions = attempt.questions.map(aq => {
       const userAnswer = answers[aq.questionId] !== undefined ? answers[aq.questionId] : -1;
       const questionData = questionsMap[aq.questionId];
-      const correct = questionData ? userAnswer === questionData.correct : false;
+      const optionOrder = normalizeOptionOrder(aq.optionOrder?.map(Number));
+      const originalAnswer = userAnswer >= 0 && userAnswer < optionOrder.length
+        ? optionOrder[userAnswer]
+        : -1;
+      const correct = questionData ? originalAnswer === questionData.correct : false;
       if (correct) score++;
-      return { questionId: aq.questionId, selectedAnswer: userAnswer, correct };
+      return { questionId: aq.questionId, optionOrder, selectedAnswer: userAnswer, correct };
     });
 
     attempt.questions = gradedQuestions;
@@ -211,15 +247,16 @@ async function handleQuizRoute(req, res, path, parsed) {
     // Build detailed results with correct answers & explanations
     const detailedResults = attempt.questions.map(aq => {
       const q = questionsMap[aq.questionId];
+      const optionOrder = normalizeOptionOrder(aq.optionOrder?.map(Number));
       return {
         questionId: aq.questionId,
         selectedAnswer: aq.selectedAnswer,
         correct: aq.correct,
-        correctAnswer: q ? q.correct : null,
+        correctAnswer: q ? optionOrder.indexOf(q.correct) : null,
         question_vi: q ? q.question_vi : '',
         question_en: q ? q.question_en : '',
-        options_vi: q ? q.options_vi : [],
-        options_en: q ? q.options_en : [],
+        options_vi: q ? optionOrder.map(index => q.options_vi[index]) : [],
+        options_en: q ? optionOrder.map(index => q.options_en[index]) : [],
         explanation_vi: q ? q.explanation_vi : '',
         explanation_en: q ? q.explanation_en : '',
       };
