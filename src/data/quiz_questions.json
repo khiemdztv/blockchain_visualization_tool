@@ -1543,13 +1543,13 @@
     "id": "q071",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Cây Merkle là gì?",
+    "question_vi": "Cây Merkle (Merkle Tree) được mô tả đúng nhất như thế nào?",
     "question_en": "What is a Merkle Tree?",
     "options_vi": [
-      "Cây nhị phân lưu file",
-      "Cây hash: lá = hash(data), cha = hash(con)",
-      "Thuật toán sắp xếp",
-      "Đồ thị"
+      "Cấu trúc phân cấp dùng giá trị băm nhưng không tạo một giá trị gốc chung",
+      "Cấu trúc phân cấp liên kết dữ liệu bằng giá trị băm và tạo ra một root",
+      "Danh sách tuyến tính lưu các giá trị băm theo đúng thứ tự ban đầu",
+      "Thuật toán mã hóa dùng một khóa chung để bảo vệ toàn bộ dữ liệu"
     ],
     "options_en": [
       "Binary file tree",
@@ -1558,20 +1558,20 @@
       "Graph"
     ],
     "correct": 1,
-    "explanation_vi": "Merkle Tree: cấu trúc hash phân cấp.",
+    "explanation_vi": "Cây Merkle là cấu trúc dữ liệu xác thực dựa trên hàm băm. Các nút lá đại diện cho dữ liệu hoặc giá trị băm của dữ liệu; các nút phía trên được tạo từ giá trị băm của các nút con, cuối cùng tạo thành Merkle Root.",
     "explanation_en": "Merkle Tree: hierarchical hash structure."
   },
   {
     "id": "q072",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Merkle Root là gì?",
+    "question_vi": "Merkle Root đại diện cho nội dung nào?",
     "question_en": "What is Merkle Root?",
     "options_vi": [
-      "Hash đầu tiên",
-      "Hash gốc đại diện toàn bộ dữ liệu",
-      "Giao dịch đầu",
-      "Block header"
+      "Giá trị băm trực tiếp của riêng phần tử đầu tiên trong cây",
+      "Giá trị gốc được suy ra từ toàn bộ dữ liệu và cấu trúc cây",
+      "Tổng số nút lá đã được chuyển thành một giá trị băm",
+      "Khóa bí mật dùng để xác thực người xây dựng cây"
     ],
     "options_en": [
       "First hash",
@@ -1580,20 +1580,20 @@
       "Block header"
     ],
     "correct": 1,
-    "explanation_vi": "Merkle Root = hash tổng hợp duy nhất.",
+    "explanation_vi": "Merkle Root là giá trị băm ở nút cao nhất của cây. Giá trị này phụ thuộc vào toàn bộ dữ liệu bên dưới nên có thể được dùng làm đại diện cô đọng cho trạng thái của toàn bộ tập dữ liệu.",
     "explanation_en": "Merkle Root = single summary hash."
   },
   {
     "id": "q073",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Merkle Tree dùng để làm gì trong blockchain?",
+    "question_vi": "Cây Merkle giúp kiểm tra một giao dịch trong khối như thế nào?",
     "question_en": "Merkle Tree purpose in blockchain?",
     "options_vi": [
-      "Mã hoá",
-      "Xác minh nhanh giao dịch tồn tại",
-      "Lưu hình ảnh",
-      "Kết nối P2P"
+      "Dùng root cùng toàn bộ danh sách giao dịch để kiểm tra lại từ đầu",
+      "Dùng một đường dẫn gồm các giá trị băm để tính lại Merkle Root",
+      "Chỉ so sánh mã giao dịch với root mà không cần dữ liệu bổ sung",
+      "Giải mã Merkle Root để lấy lại nội dung giao dịch ban đầu"
     ],
     "options_en": [
       "Encrypt",
@@ -1602,20 +1602,20 @@
       "P2P connect"
     ],
     "correct": 1,
-    "explanation_vi": "Xác minh giao dịch trong O(log n).",
+    "explanation_vi": "Cây Merkle cho phép tạo bằng chứng bao gồm có kích thước tăng theo `O(log n)`, nhờ đó một giao dịch có thể được kiểm tra mà không cần truyền toàn bộ danh sách giao dịch của khối.",
     "explanation_en": "Verify transactions in O(log n)."
   },
   {
     "id": "q074",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "1 giao dịch thay đổi → Merkle Root?",
+    "question_vi": "Khi nội dung một giao dịch trong cây Merkle thay đổi, điều gì thường xảy ra?",
     "question_en": "1 transaction changes → Merkle Root?",
     "options_vi": [
-      "Không đổi",
-      "Thay đổi",
-      "Chỉ khi tx đầu",
-      "Tuỳ kích thước"
+      "Chỉ nút lá tương ứng thay đổi, còn root luôn giữ nguyên",
+      "Nút lá và các nút cha trên đường đến Merkle Root thay đổi",
+      "Mọi nút lá khác cũng đổi dù dữ liệu của chúng không thay đổi",
+      "Chỉ vị trí hiển thị của giao dịch thay đổi, các hash giữ nguyên"
     ],
     "options_en": [
       "No change",
@@ -1624,42 +1624,42 @@
       "Depends on size"
     ],
     "correct": 1,
-    "explanation_vi": "Bất kỳ thay đổi nào → Root thay đổi.",
+    "explanation_vi": "Giao dịch thay đổi làm giá trị băm của nút lá tương ứng thay đổi. Sự thay đổi tiếp tục lan truyền qua các nút tổ tiên đến nút gốc, khiến Merkle Root thay đổi.",
     "explanation_en": "Any change → Root changes."
   },
   {
     "id": "q075",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Ai phát minh Merkle Tree?",
-    "question_en": "Who invented Merkle Tree?",
+    "question_vi": "Khi tính nút cha, vì sao phải giữ đúng thứ tự nút trái và nút phải?",
+    "question_en": "Why must the left-to-right order of two child nodes be preserved when calculating their parent?",
     "options_vi": [
-      "Satoshi Nakamoto",
-      "Ralph Merkle",
-      "Vitalik Buterin",
-      "Alan Turing"
+      "Vì đổi thứ tự làm chuỗi đầu vào khác và thường tạo hash cha khác",
+      "Vì thứ tự chỉ ảnh hưởng hình vẽ nhưng không ảnh hưởng giá trị hash",
+      "Vì đúng thứ tự giúp giảm số phép băm cần thực hiện ở mỗi tầng",
+      "Vì hàm băm chỉ xử lý được dữ liệu xuất phát từ nút bên trái"
     ],
     "options_en": [
-      "Satoshi Nakamoto",
-      "Ralph Merkle",
-      "Vitalik Buterin",
-      "Alan Turing"
+      "Changing the order changes the input sequence and normally produces a different parent hash",
+      "The order only affects the diagram and never affects the resulting hash",
+      "Preserving the order reduces the required number of hash operations",
+      "A hash function can process data only from the left child"
     ],
-    "correct": 1,
-    "explanation_vi": "Ralph Merkle phát minh năm 1979.",
-    "explanation_en": "Ralph Merkle invented it in 1979."
+    "correct": 0,
+    "explanation_vi": "Phép nối nói chung không có tính giao hoán: `left || right` khác `right || left`. Vì vậy, đổi vị trí hai nút con thường tạo ra giá trị băm cha khác và cuối cùng làm thay đổi Merkle Root.",
+    "explanation_en": "Concatenation is generally not commutative: left || right differs from right || left. Swapping the children therefore normally changes the parent hash and the Merkle Root."
   },
   {
     "id": "q076",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Merkle Proof cần bao nhiêu hash cho N giao dịch?",
+    "question_vi": "Với cây Merkle nhị phân cân bằng có `N` nút lá, một bằng chứng bao gồm thường cần khoảng bao nhiêu giá trị băm?",
     "question_en": "Merkle Proof needs how many hashes for N txs?",
     "options_vi": [
-      "N",
-      "log₂(N)",
-      "N/2",
-      "1"
+      "`O(N)`, tương ứng với số nút lá của cây",
+      "`O(log₂N)`, tương ứng với chiều cao của cây",
+      "`O(√N)`, tương ứng với căn bậc hai số nút lá",
+      "`O(1)`, không phụ thuộc vào số nút lá của cây"
     ],
     "options_en": [
       "N",
@@ -1668,20 +1668,20 @@
       "1"
     ],
     "correct": 1,
-    "explanation_vi": "Chỉ cần log₂(N) hash.",
+    "explanation_vi": "Mỗi tầng trên đường từ nút lá đến gốc cần một giá trị băm anh em. Chiều cao của cây nhị phân cân bằng tăng theo `log₂(N)`.",
     "explanation_en": "Only log₂(N) hashes needed."
   },
   {
     "id": "q077",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "8 giao dịch → cây Merkle có mấy tầng?",
+    "question_vi": "Một cây Merkle nhị phân đầy đủ được tạo từ tám giao dịch có bao nhiêu tầng nếu tính cả tầng lá?",
     "question_en": "8 transactions → how many Merkle Tree levels?",
     "options_vi": [
-      "2",
-      "3",
-      "4",
-      "8"
+      "2 tầng",
+      "3 tầng",
+      "4 tầng",
+      "8 tầng"
     ],
     "options_en": [
       "2",
@@ -1690,20 +1690,20 @@
       "8"
     ],
     "correct": 2,
-    "explanation_vi": "8=2^3 → 3 tầng hash + 1 tầng lá = 4.",
+    "explanation_vi": "Tám nút lá tạo thành các tầng có lần lượt 8, 4, 2 và 1 nút, nên cây có tổng cộng bốn tầng.",
     "explanation_en": "8=2^3 → 3 hash levels + 1 leaf = 4."
   },
   {
     "id": "q078",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Số giao dịch lẻ → Merkle Tree xử lý sao?",
+    "question_vi": "Trong cách xây dựng cây Merkle của Bitcoin, một tầng có số lượng giá trị băm lẻ thường được xử lý như thế nào?",
     "question_en": "Odd transaction count → Merkle Tree?",
     "options_vi": [
-      "Bỏ tx cuối",
-      "Nhân đôi tx cuối",
-      "Thêm tx rỗng",
-      "Lỗi"
+      "Chuyển giá trị cuối lên tầng kế tiếp mà không thực hiện phép băm",
+      "Nhân đôi giá trị băm cuối để tạo thành một cặp trước khi băm",
+      "Ghép giá trị cuối với một hash rỗng cố định do giao thức quy định",
+      "Loại bỏ giá trị cuối và tiếp tục tính root từ các cặp còn lại"
     ],
     "options_en": [
       "Drop last",
@@ -1712,20 +1712,20 @@
       "Error"
     ],
     "correct": 1,
-    "explanation_vi": "Node cuối được nhân đôi.",
+    "explanation_vi": "Trong Bitcoin, khi một tầng có số lượng giá trị băm lẻ, giá trị cuối cùng được nhân đôi trước khi ghép cặp. Đây là quy tắc của Bitcoin, không phải quy tắc bắt buộc đối với mọi biến thể cây Merkle.",
     "explanation_en": "Last node is duplicated."
   },
   {
     "id": "q079",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "SPV dùng gì để xác minh giao dịch?",
+    "question_vi": "Một máy khách SPV cần những thành phần nào để kiểm tra một giao dịch đã được đưa vào khối?",
     "question_en": "SPV uses what to verify transactions?",
     "options_vi": [
-      "Toàn bộ blockchain",
-      "Merkle Proof + Block header",
-      "Chỉ hash tx",
-      "Đào lại block"
+      "Toàn bộ nội dung các khối kể từ khối khởi nguyên đến khối cần kiểm tra",
+      "Bằng chứng Merkle của giao dịch và các tiêu đề khối liên quan",
+      "Mã giao dịch cùng chữ ký của thợ đào nhưng không cần tiêu đề khối",
+      "Khóa riêng của nút đầy đủ đã cung cấp dữ liệu xác minh"
     ],
     "options_en": [
       "Entire blockchain",
@@ -1734,20 +1734,20 @@
       "Re-mine block"
     ],
     "correct": 1,
-    "explanation_vi": "SPV: headers + Merkle Proof, không cần full blockchain.",
+    "explanation_vi": "Bằng chứng Merkle liên kết giao dịch với Merkle Root trong tiêu đề khối; chuỗi tiêu đề giúp máy khách đánh giá khối đó trong chuỗi Proof of Work mà không cần tải toàn bộ nội dung các khối.",
     "explanation_en": "SPV: headers + Merkle Proof, no full blockchain needed."
   },
   {
     "id": "q080",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Merkle Patricia Trie dùng trong blockchain nào?",
+    "question_vi": "Modified Merkle Patricia Trie được sử dụng rộng rãi ở lớp thực thi của blockchain nào?",
     "question_en": "Merkle Patricia Trie is used in which blockchain?",
     "options_vi": [
-      "Bitcoin",
-      "Ethereum",
-      "Cardano",
-      "Solana"
+      "Bitcoin, để tổ chức trực tiếp tập UTXO trong mọi triển khai nút",
+      "Ethereum, đặc biệt trong cấu trúc dữ liệu của lớp thực thi",
+      "Cardano, để thay thế hoàn toàn mô hình sổ cái mở rộng UTXO",
+      "Solana, để sắp xếp giao dịch theo cơ chế Proof of History"
     ],
     "options_en": [
       "Bitcoin",
@@ -1756,20 +1756,20 @@
       "Solana"
     ],
     "correct": 1,
-    "explanation_vi": "Ethereum dùng Modified Merkle Patricia Trie.",
+    "explanation_vi": "Lớp thực thi Ethereum sử dụng Modified Merkle Patricia Trie để biểu diễn dữ liệu dạng khóa–giá trị như trạng thái tài khoản, giao dịch và biên nhận, đồng thời tạo các root tương ứng trong tiêu đề khối.",
     "explanation_en": "Ethereum uses Modified Merkle Patricia Trie."
   },
   {
     "id": "q081",
     "topic": "merkle",
     "difficulty": "hard",
-    "question_vi": "Độ phức tạp xây dựng Merkle Tree từ N lá?",
+    "question_vi": "Độ phức tạp thời gian để xây dựng một cây Merkle nhị phân đầy đủ từ `N` nút lá là bao nhiêu?",
     "question_en": "Complexity of building Merkle Tree from N leaves?",
     "options_vi": [
-      "O(N)",
-      "O(N log N)",
-      "O(N²)",
-      "O(log N)"
+      "`O(N)`, vì tổng số nút trong cây tăng tuyến tính theo số lá",
+      "`O(N log N)`, vì mỗi nút lá phải đi qua toàn bộ chiều cao cây",
+      "`O(N²)`, vì mỗi cặp nút lá phải được băm cùng nhau một lần",
+      "`O(log N)`, vì chỉ cần tính các nút trên một đường đến root"
     ],
     "options_en": [
       "O(N)",
@@ -1778,7 +1778,7 @@
       "O(log N)"
     ],
     "correct": 0,
-    "explanation_vi": "O(N): mỗi node tính 1 hash, tổng ~2N nodes.",
+    "explanation_vi": "Một cây nhị phân đầy đủ có `N` lá chứa khoảng `N - 1` nút trong. Mỗi nút trong cần một lần tính băm từ các nút con, nên tổng số phép tính tăng tuyến tính theo `N`.",
     "explanation_en": "O(N): each node computes 1 hash, ~2N total nodes."
   },
   {
@@ -4425,13 +4425,13 @@
     "id": "q202",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Nút lá = hash?",
+    "question_vi": "Phát biểu nào chính xác nhất về nút lá trong cây Merkle của các giao dịch?",
     "question_en": "Leaf = hash of?",
     "options_vi": [
-      "Block",
-      "Giao dịch",
-      "Root",
-      "Nonce"
+      "Nút lá chứa nguyên văn giao dịch và không sử dụng bất kỳ hàm băm nào",
+      "Nút lá thường chứa giá trị băm được tạo từ dữ liệu giao dịch",
+      "Nút lá chứa chữ ký số tách biệt hoàn toàn với nội dung giao dịch",
+      "Nút lá lấy trực tiếp từ nonce được lưu trong tiêu đề khối"
     ],
     "options_en": [
       "Block",
@@ -4440,20 +4440,20 @@
       "Nonce"
     ],
     "correct": 1,
-    "explanation_vi": "hash(tx data).",
+    "explanation_vi": "Nút lá thường chứa giá trị băm của một giao dịch hoặc một phần dữ liệu. Cách biểu diễn cụ thể phụ thuộc vào thiết kế của hệ thống.",
     "explanation_en": "hash(tx data)."
   },
   {
     "id": "q203",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Nút cha tính?",
+    "question_vi": "Công thức nào mô tả đúng cách tính một nút cha trong cây Merkle nhị phân thông thường?",
     "question_en": "Parent computed?",
     "options_vi": [
-      "Cộng",
-      "Hash(trái+phải)",
-      "XOR",
-      "Nhân"
+      "`H(left) || H(right)`",
+      "`H(left || right)`",
+      "`H(left) XOR H(right)`",
+      "`left + right`, không cần hàm băm"
     ],
     "options_en": [
       "Add",
@@ -4462,20 +4462,20 @@
       "Multiply"
     ],
     "correct": 1,
-    "explanation_vi": "hash(left||right).",
+    "explanation_vi": "Nút cha thường được tính theo công thức `H(left_hash || right_hash)`, trong đó `||` là phép nối và thứ tự trái–phải phải được giữ nguyên.",
     "explanation_en": "hash(left||right)."
   },
   {
     "id": "q204",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "2 tx → mấy nút?",
+    "question_vi": "Nếu mỗi giao dịch tương ứng với một nút lá, cây Merkle nhị phân đầy đủ của hai giao dịch có bao nhiêu nút khi tính cả Merkle Root?",
     "question_en": "2 txs → nodes?",
     "options_vi": [
-      "2",
-      "3",
-      "4",
-      "5"
+      "2 nút",
+      "3 nút",
+      "4 nút",
+      "5 nút"
     ],
     "options_en": [
       "2",
@@ -4484,42 +4484,42 @@
       "5"
     ],
     "correct": 1,
-    "explanation_vi": "2 lá + 1 root = 3.",
+    "explanation_vi": "Cây gồm hai nút lá đại diện cho hai giao dịch và một nút cha cũng là Merkle Root, tổng cộng có ba nút.",
     "explanation_en": "2 leaves + 1 root = 3."
   },
   {
     "id": "q205",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "4 tx → mấy tầng?",
-    "question_en": "4 txs → levels?",
+    "question_vi": "Với bốn giao dịch và quy ước mỗi cặp nút tạo một nút cha, cây Merkle đầy đủ có bao nhiêu tầng khi tính cả tầng lá và tầng root?",
+    "question_en": "With four transactions and one parent produced from each pair of nodes, how many levels does a full Merkle tree have when both the leaf and root levels are counted?",
     "options_vi": [
-      "1",
-      "2",
-      "3",
-      "4"
+      "1 tầng",
+      "2 tầng",
+      "3 tầng",
+      "4 tầng"
     ],
     "options_en": [
-      "1",
-      "2",
-      "3",
-      "4"
+      "1 level",
+      "2 levels",
+      "3 levels",
+      "4 levels"
     ],
-    "correct": 1,
-    "explanation_vi": "2 tầng hash.",
-    "explanation_en": "2 hash levels."
+    "correct": 2,
+    "explanation_vi": "Cây có một tầng gồm bốn nút lá, một tầng gồm hai nút cha và một tầng gồm Merkle Root, tổng cộng là ba tầng.",
+    "explanation_en": "The tree has a level of four leaves, a level of two parent nodes, and a root level, for a total of three levels."
   },
   {
     "id": "q206",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "MT ngoài blockchain?",
+    "question_vi": "Nhóm hệ thống nào đều sử dụng địa chỉ nội dung hoặc cấu trúc liên kết bằng hàm băm có đặc điểm tương tự Merkle?",
     "question_en": "MT outside blockchain?",
     "options_vi": [
-      "Không",
-      "Git,torrent,IPFS",
-      "BTC only",
-      "Banking"
+      "Git và IPFS, còn BitTorrent chỉ nhận diện tệp bằng tên do người dùng đặt",
+      "Git, BitTorrent và IPFS đều sử dụng hàm băm để định danh hoặc kiểm tra dữ liệu",
+      "Cơ sở dữ liệu quan hệ và DNS vì mọi dữ liệu phân cấp đều là cây Merkle",
+      "Trình soạn thảo văn bản thuần túy không lưu lịch sử hoặc mã băm dữ liệu"
     ],
     "options_en": [
       "None",
@@ -4528,20 +4528,20 @@
       "Banking"
     ],
     "correct": 1,
-    "explanation_vi": "Git, BitTorrent, IPFS.",
+    "explanation_vi": "Git là hệ thống quản lý phiên bản phân tán; BitTorrent là giao thức chia sẻ tệp ngang hàng; IPFS là hệ thống lưu trữ và phân phối nội dung theo địa chỉ nội dung. Các hệ thống này đều sử dụng giá trị băm để liên kết, định danh hoặc kiểm tra tính toàn vẹn của dữ liệu, dù cấu trúc cụ thể không hoàn toàn giống nhau.",
     "explanation_en": "Git, BitTorrent, IPFS."
   },
   {
     "id": "q207",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Merkle Root ở đâu?",
+    "question_vi": "Thành phần nào của khối Bitcoin trực tiếp chứa Merkle Root của danh sách giao dịch?",
     "question_en": "Root stored?",
     "options_vi": [
-      "Tx list",
-      "Block header",
-      "Mempool",
-      "UTXO"
+      "Phần thân khối, trong một trường riêng nằm trước danh sách giao dịch",
+      "Tiêu đề khối, cùng với các trường như hash khối trước và nonce",
+      "Tập UTXO được từng nút tính lại sau khi khối đã được xác nhận",
+      "Mempool cục bộ của thợ đào đã đề xuất khối đó"
     ],
     "options_en": [
       "Tx list",
@@ -4550,42 +4550,42 @@
       "UTXO"
     ],
     "correct": 1,
-    "explanation_vi": "Block header.",
+    "explanation_vi": "Tiêu đề khối Bitcoin chứa Merkle Root để cam kết với toàn bộ danh sách giao dịch của khối.",
     "explanation_en": "Block header."
   },
   {
     "id": "q208",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "SPV dùng MT để?",
-    "question_en": "SPV uses MT for?",
+    "question_vi": "Trong SPV, bằng chứng Merkle được dùng để kiểm tra điều gì?",
+    "question_en": "In SPV, what does a Merkle proof verify?",
     "options_vi": [
-      "Mining",
-      "Giảm data verify",
-      "Block",
-      "Encrypt"
+      "Giao dịch thuộc khối được đại diện bởi Merkle Root trong tiêu đề",
+      "Giao dịch tuân thủ mọi quy tắc đồng thuận mà không cần tiêu đề khối",
+      "Khối có Proof of Work hợp lệ chỉ dựa vào nội dung của giao dịch",
+      "Giao dịch đã được mã hóa và chỉ người nhận mới có thể đọc"
     ],
     "options_en": [
-      "Mining",
-      "Reduce verify data",
-      "Block",
-      "Encrypt"
+      "That a transaction belongs to the block represented by the Merkle Root in its header",
+      "That a transaction satisfies every consensus rule without using a block header",
+      "That the block has valid Proof of Work using only the transaction contents",
+      "That the transaction is encrypted and readable only by its recipient"
     ],
-    "correct": 1,
-    "explanation_vi": "Headers + proof thôi.",
-    "explanation_en": "Headers + proof only."
+    "correct": 0,
+    "explanation_vi": "Một máy khách SPV có thể kết hợp tiêu đề khối với bằng chứng Merkle để kiểm tra một giao dịch đã được đưa vào khối mà không cần lưu toàn bộ blockchain.",
+    "explanation_en": "An SPV client combines a block header with a Merkle proof to verify transaction inclusion without storing the entire blockchain."
   },
   {
     "id": "q209",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "1024 tx → proof cần?",
+    "question_vi": "Trong cây Merkle nhị phân đầy đủ có 1.024 nút lá, một bằng chứng bao gồm cho một nút lá cần bao nhiêu giá trị băm anh em?",
     "question_en": "1024 txs → proof needs?",
     "options_vi": [
-      "1024",
-      "512",
-      "10",
-      "100"
+      "1.024 giá trị, bằng tổng số nút lá của cây",
+      "512 giá trị, bằng một nửa tổng số nút lá",
+      "10 giá trị, bằng `log₂(1.024)`",
+      "100 giá trị, xấp xỉ căn bậc hai số nút lá"
     ],
     "options_en": [
       "1024",
@@ -4594,20 +4594,20 @@
       "100"
     ],
     "correct": 2,
-    "explanation_vi": "log₂(1024)=10.",
+    "explanation_vi": "Vì `1.024 = 2¹⁰`, đường dẫn từ một nút lá đến gốc có 10 bước và cần 10 giá trị băm anh em.",
     "explanation_en": "log₂(1024)=10."
   },
   {
     "id": "q210",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Bằng chứng Merkle (Merkle proof) chứa những thành phần nào?",
+    "question_vi": "Một bằng chứng Merkle cho một nút lá thường gồm những thành phần nào?",
     "question_en": "What components does a Merkle proof contain?",
     "options_vi": [
-      "Cây",
-      "Sibling hashes",
-      "Root",
-      "Lá"
+      "Toàn bộ các nút trên mọi nhánh của cây cùng với Merkle Root",
+      "Các hash anh em và thông tin thứ tự ghép trên đường dẫn đến root",
+      "Nút lá, Merkle Root và số lượng nút nhưng không có các hash anh em",
+      "Chỉ dữ liệu gốc của nút lá và thuật toán băm đang được sử dụng"
     ],
     "options_en": [
       "Tree",
@@ -4616,20 +4616,20 @@
       "Leaves"
     ],
     "correct": 1,
-    "explanation_vi": "Sibling hashes + vị trí.",
+    "explanation_vi": "Các giá trị băm anh em và vị trí trái–phải cho phép trình xác minh tính lần lượt các nút cha cho đến Merkle Root.",
     "explanation_en": "Sibling hashes + positions."
   },
   {
     "id": "q211",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Nếu có 5 giao dịch, cây Merkle được xây dựng như thế nào?",
+    "question_vi": "Vì sao bên tạo cây và bên xác minh phải thống nhất cách xử lý khi một tầng có số nút lẻ?",
     "question_en": "With 5 transactions, how is a Merkle Tree constructed?",
     "options_vi": [
-      "Bỏ 1",
-      "Nhân đôi cuối",
-      "Rỗng",
-      "Lỗi"
+      "Vì mọi cách xử lý đều tạo cùng root nhưng tạo số tầng khác nhau",
+      "Vì các quy tắc xử lý khác nhau có thể tạo ra Merkle Root khác nhau",
+      "Vì quy tắc chỉ ảnh hưởng kích thước proof, không ảnh hưởng giá trị root",
+      "Vì số nút lẻ sẽ làm lộ khóa riêng nếu không được xử lý thống nhất"
     ],
     "options_en": [
       "Drop",
@@ -4638,20 +4638,20 @@
       "Error"
     ],
     "correct": 1,
-    "explanation_vi": "Nhân đôi nút cuối.",
+    "explanation_vi": "Nhân đôi nút cuối, đưa nút lẻ lên tầng kế tiếp hoặc dùng hash mặc định là các quy ước khác nhau và có thể tạo root khác nhau. Bên tạo cây và bên xác minh phải dùng cùng quy tắc; Bitcoin nhân đôi giá trị băm cuối ở tầng có số phần tử lẻ.",
     "explanation_en": "Duplicate last node."
   },
   {
     "id": "q212",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Merkle Patricia Trie (MPT) khác cây Merkle thông thường ở điểm nào?",
+    "question_vi": "Merkle Patricia Trie khác cây Merkle nhị phân thông thường ở đặc điểm nào?",
     "question_en": "How does a Merkle Patricia Trie (MPT) differ from a regular Merkle Tree?",
     "options_vi": [
-      "Giống",
-      "Merkle+trie→key-value",
-      "Nhanh",
-      "Kém"
+      "Chỉ bổ sung đường dẫn khóa cho các nút lá nhưng không băm các nút trong",
+      "Kết hợp tra cứu theo khóa của trie với khả năng xác thực bằng hash",
+      "Thay cây nhị phân bằng cây nhiều nhánh nhưng không hỗ trợ dữ liệu khóa–giá trị",
+      "Loại bỏ giá trị root và chỉ xác minh từng nút một cách độc lập"
     ],
     "options_en": [
       "Same",
@@ -4660,20 +4660,20 @@
       "Worse"
     ],
     "correct": 1,
-    "explanation_vi": "Trie lookup + Merkle integrity.",
+    "explanation_vi": "Merkle Patricia Trie tổ chức dữ liệu theo đường dẫn của khóa và liên kết các nút bằng giá trị băm, nhờ đó hỗ trợ cả tra cứu khóa–giá trị và kiểm tra tính toàn vẹn.",
     "explanation_en": "Trie lookup + Merkle integrity."
   },
   {
     "id": "q213",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Tại sao cây Merkle hiệu quả trong việc xác minh dữ liệu?",
+    "question_vi": "Vì sao cây Merkle hiệu quả khi xác minh một phần tử trong tập dữ liệu lớn?",
     "question_en": "Why is a Merkle Tree efficient for data verification?",
     "options_vi": [
-      "Nhanh",
-      "O(log n) vs O(n)",
-      "Safe",
-      "Easy"
+      "Vì mọi bằng chứng chỉ cần đúng một hash, không phụ thuộc kích thước cây",
+      "Vì proof của cây cân bằng có kích thước `O(log n)` thay vì `O(n)`",
+      "Vì mọi nút lá có thể bị loại bỏ sau khi Merkle Root được tạo thành công",
+      "Vì Merkle Root nén không mất dữ liệu và có thể khôi phục mọi nút lá"
     ],
     "options_en": [
       "Fast",
@@ -4682,20 +4682,20 @@
       "Easy"
     ],
     "correct": 1,
-    "explanation_vi": "O(log n) verify.",
+    "explanation_vi": "Trình xác minh chỉ cần các giá trị băm anh em trên một đường từ nút lá đến gốc, nên lượng dữ liệu bằng chứng tăng theo logarit của số nút lá.",
     "explanation_en": "O(log n) verify."
   },
   {
     "id": "q214",
     "topic": "merkle",
     "difficulty": "hard",
-    "question_vi": "Cây Merkle thưa (Sparse Merkle Tree) khác cây Merkle thường ở chỗ nào?",
+    "question_vi": "Sparse Merkle Tree khác cây Merkle thông thường ở đặc điểm nào?",
     "question_en": "How does a Sparse Merkle Tree differ from a regular one?",
     "options_vi": [
-      "Nhỏ",
-      "2^256 lá, hầu hết rỗng",
-      "Thường",
-      "No hash"
+      "Có không gian khóa động và loại bỏ hoàn toàn mọi nhánh không chứa dữ liệu",
+      "Có không gian khóa cố định lớn và dùng hash mặc định cho các nút rỗng",
+      "Có cấu trúc như cây Merkle thường nhưng luôn lưu tường minh mọi nút rỗng",
+      "Chỉ hỗ trợ inclusion proof và không thể chứng minh một khóa không tồn tại"
     ],
     "options_en": [
       "Small",
@@ -4704,20 +4704,20 @@
       "No hash"
     ],
     "correct": 1,
-    "explanation_vi": "Default hash cho rỗng.",
+    "explanation_vi": "Sparse Merkle Tree biểu diễn một không gian khóa cố định, chẳng hạn `2²⁵⁶` vị trí đối với khóa 256 bit. Các nhánh rỗng được biểu diễn bằng giá trị băm mặc định nên không cần lưu tường minh toàn bộ cây.",
     "explanation_en": "Default hash for empty."
   },
   {
     "id": "q215",
     "topic": "merkle",
     "difficulty": "hard",
-    "question_vi": "Verkle Tree cải tiến gì so với cây Merkle truyền thống?",
+    "question_vi": "Verkle Tree hướng đến cải thiện điểm nào so với cây Merkle truyền thống?",
     "question_en": "What does a Verkle Tree improve over a traditional Merkle Tree?",
     "options_vi": [
-      "=Merkle",
-      "Vector commitments, proof nhỏ",
-      "Chậm",
-      "Kém"
+      "Giảm proof bằng cách tăng hệ số phân nhánh nhưng vẫn chỉ dùng hash nhị phân",
+      "Giảm proof nhờ vector commitment và cây có hệ số phân nhánh lớn",
+      "Giảm bộ nhớ bằng cách giới hạn mỗi nút chỉ có hai nút con cố định",
+      "Tăng tính riêng tư bằng cách mã hóa đối xứng toàn bộ các nút trong cây"
     ],
     "options_en": [
       "=Merkle",
@@ -4726,20 +4726,20 @@
       "Worse"
     ],
     "correct": 1,
-    "explanation_vi": "Proof O(1).",
+    "explanation_vi": "Verkle Tree sử dụng vector commitment để cam kết với nhiều nút con trong mỗi nút. Hệ số phân nhánh lớn làm giảm chiều sâu của cây và có thể tạo bằng chứng nhỏ hơn cho nhiều phần tử so với cây Merkle nhị phân.",
     "explanation_en": "Proof O(1)."
   },
   {
     "id": "q216",
     "topic": "merkle",
     "difficulty": "hard",
-    "question_vi": "Merkle Mountain Range (MMR) khác cây Merkle thông thường như thế nào?",
+    "question_vi": "Merkle Mountain Range (MMR) phù hợp với dữ liệu chỉ-thêm nhờ đặc điểm nào?",
     "question_en": "How does a Merkle Mountain Range (MMR) differ from a regular Merkle Tree?",
     "options_vi": [
-      "Giống",
-      "Append-only ko rebuild",
-      "Kém",
-      "Chỉ BTC"
+      "Duy trì một cây hoàn chỉnh duy nhất và xây lại cây sau mỗi lần thêm lá",
+      "Duy trì nhiều cây hoàn chỉnh và chỉ hợp nhất các đỉnh cần thiết khi thêm lá",
+      "Duy trì danh sách root độc lập nhưng không tạo liên hệ mật mã giữa các cây",
+      "Duy trì cây chỉ khi tổng số lá luôn là một lũy thừa chính xác của hai"
     ],
     "options_en": [
       "Same",
@@ -4748,7 +4748,7 @@
       "BTC only"
     ],
     "correct": 1,
-    "explanation_vi": "Append hiệu quả.",
+    "explanation_vi": "MMR tổ chức dữ liệu thành các cây Merkle hoàn chỉnh có kích thước khác nhau. Khi thêm lá, cấu trúc chỉ hợp nhất các đỉnh có cùng kích thước, giúp thao tác nối thêm hiệu quả mà không phải xây lại toàn bộ lịch sử.",
     "explanation_en": "Efficient append."
   },
   {
@@ -6911,79 +6911,79 @@
     "id": "q315",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Hash tree = ?",
-    "question_en": "Hash tree = ?",
+    "question_vi": "Khi xác minh một bằng chứng Merkle, điều kiện nào quyết định bằng chứng được chấp nhận?",
+    "question_en": "When verifying a Merkle proof, which condition determines whether the proof is accepted?",
     "options_vi": [
-      "Cây nhị phân",
-      "Merkle Tree",
-      "B-tree",
-      "AVL tree"
+      "Root tính lại từ nút lá và đường dẫn trùng với Merkle Root đã biết",
+      "Các giá trị băm trong bằng chứng có cùng độ dài với Merkle Root",
+      "Hash của nút lá xuất hiện trong cơ sở dữ liệu cục bộ của người kiểm tra",
+      "Số hash trong bằng chứng bằng đúng tổng số giao dịch của khối"
     ],
     "options_en": [
-      "Binary tree",
-      "Merkle Tree",
-      "B-tree",
-      "AVL tree"
+      "The root recomputed from the leaf and proof path matches the known Merkle Root",
+      "Every hash in the proof has the same length as the Merkle Root",
+      "The leaf hash appears in the verifier’s local database",
+      "The number of proof hashes equals the total number of block transactions"
     ],
-    "correct": 1,
-    "explanation_vi": "Hash tree = Merkle Tree.",
-    "explanation_en": "Hash tree = Merkle Tree."
+    "correct": 0,
+    "explanation_vi": "Trình xác minh tính lần lượt các nút cha theo đường dẫn được cung cấp. Bằng chứng hợp lệ khi root tính được trùng với Merkle Root lấy từ một nguồn đáng tin cậy, chẳng hạn tiêu đề khối đã được chấp nhận.",
+    "explanation_en": "The verifier repeatedly computes parent nodes along the supplied path. The proof is valid when the computed root equals a trusted Merkle Root."
   },
   {
     "id": "q316",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "16 tx → Merkle proof cần?",
-    "question_en": "16 txs → Merkle proof needs?",
+    "question_vi": "Khi số nút lá của một cây Merkle nhị phân đầy đủ tăng từ 8 lên 16, số giá trị băm anh em trong một bằng chứng bao gồm tăng như thế nào?",
+    "question_en": "When a full binary Merkle tree grows from 8 to 16 leaves, how does the number of sibling hashes in an inclusion proof change?",
     "options_vi": [
-      "16",
-      "8",
-      "4",
-      "2"
+      "Tăng từ 3 lên 4",
+      "Tăng từ 4 lên 8",
+      "Tăng từ 8 lên 16",
+      "Không thay đổi vì Merkle Root vẫn chỉ có một giá trị"
     ],
     "options_en": [
-      "16",
-      "8",
-      "4",
-      "2"
+      "It increases from 3 to 4",
+      "It increases from 4 to 8",
+      "It increases from 8 to 16",
+      "It does not change because there is still only one Merkle Root"
     ],
-    "correct": 2,
-    "explanation_vi": "log₂(16)=4 hashes.",
-    "explanation_en": "log₂(16)=4 hashes."
+    "correct": 0,
+    "explanation_vi": "Độ dài bằng chứng trong cây nhị phân đầy đủ là `log₂(N)`. Với 8 lá cần 3 giá trị băm anh em; với 16 lá cần 4, tức chỉ tăng thêm một giá trị.",
+    "explanation_en": "Proof length in a full binary tree is log2(N). Eight leaves require three sibling hashes and sixteen leaves require four."
   },
   {
     "id": "q317",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "MT dùng hash gì?",
-    "question_en": "MT uses what hash?",
+    "question_vi": "Yếu tố nào quyết định thuật toán băm được sử dụng trong một cây Merkle cụ thể?",
+    "question_en": "What determines the hash algorithm used by a particular Merkle tree?",
     "options_vi": [
-      "MD5",
-      "Tùy, thường SHA-256",
-      "Chỉ SHA-1",
-      "Không hash"
+      "Chuẩn hoặc giao thức của hệ thống quy định thuật toán và cách mã hóa dữ liệu",
+      "Người xác minh tự chọn hàm băm khác nhưng vẫn nhận được cùng một root",
+      "Số lượng nút lá quyết định tự động nên dùng SHA-1 hay SHA-256",
+      "Loại thiết bị hiển thị cây quyết định thuật toán băm được sử dụng"
     ],
     "options_en": [
-      "MD5",
-      "Depends, usually SHA-256",
-      "SHA-1 only",
-      "No hash"
+      "The system standard or protocol defines the algorithm and data encoding",
+      "Each verifier may choose another hash function and still obtain the same root",
+      "The number of leaves automatically determines whether SHA-1 or SHA-256 is used",
+      "The display device used to visualize the tree determines the algorithm"
     ],
-    "correct": 1,
-    "explanation_vi": "Bitcoin dùng SHA-256.",
-    "explanation_en": "Bitcoin uses SHA-256."
+    "correct": 0,
+    "explanation_vi": "Cây Merkle có thể sử dụng các hàm băm mật mã khác nhau. Ví dụ, Bitcoin sử dụng SHA-256 kép khi tính các nút trong cây giao dịch, trong khi hệ thống khác có thể sử dụng thuật toán khác.",
+    "explanation_en": "Merkle trees can use different cryptographic hash functions, but every participant must follow the same protocol rules. Bitcoin, for example, uses double SHA-256 for transaction-tree nodes."
   },
   {
     "id": "q318",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Merkle DAG trong hệ thống IPFS hoạt động như thế nào?",
+    "question_vi": "Merkle DAG trong IPFS tổ chức và định danh dữ liệu như thế nào?",
     "question_en": "How does the Merkle DAG work in the IPFS system?",
     "options_vi": [
-      "Cây",
-      "Đồ thị có hướng không chu trình dùng hash",
-      "List",
-      "Stack"
+      "Bằng cây phân cấp bắt buộc mỗi nút chỉ có tối đa hai liên kết con",
+      "Bằng DAG có các nút định danh theo nội dung và liên kết bằng mã băm",
+      "Bằng danh sách nội dung liên kết qua địa chỉ máy chủ thay vì nội dung dữ liệu",
+      "Bằng đồ thị có chu trình, trong đó mỗi nút được định danh bằng số thứ tự"
     ],
     "options_en": [
       "Tree",
@@ -6992,42 +6992,42 @@
       "Stack"
     ],
     "correct": 1,
-    "explanation_vi": "IPFS: content-addressed Merkle DAG.",
+    "explanation_vi": "Trong Merkle DAG, mã định danh nội dung của một nút phụ thuộc vào nội dung của nút đó. Nút có thể tham chiếu đến các nút khác bằng mã định danh nội dung, tạo thành đồ thị có hướng không chu trình.",
     "explanation_en": "IPFS: content-addressed Merkle DAG."
   },
   {
     "id": "q319",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Bằng chứng nhất quán (Consistency proof) trong Merkle Tree dùng để làm gì?",
-    "question_en": "What is a consistency proof in Merkle Trees used for?",
+    "question_vi": "Bằng chứng nhất quán trong một Merkle log chỉ-thêm được dùng để chứng minh điều gì?",
+    "question_en": "What does a consistency proof establish in an append-only Merkle log?",
     "options_vi": [
-      "Mining",
-      "Chứng minh log mới mở rộng từ log cũ",
-      "Encrypt",
-      "Wallet"
+      "Log mới mở rộng log cũ mà không sửa hoặc xóa các mục đã tồn tại",
+      "Log mới chứa mọi mục của log cũ nhưng có thể sắp xếp lại thứ tự",
+      "Hai phiên bản log có cùng số lượng mục và cùng thuật toán băm",
+      "Mọi mục trong log đã được mã hóa bằng cùng một khóa bí mật"
     ],
     "options_en": [
-      "Mining",
-      "Prove new log extends old log",
-      "Encrypt",
-      "Wallet"
+      "The new log extends the old log without modifying or deleting existing entries",
+      "The new log contains the old entries but may reorder them",
+      "Both log versions contain the same number of entries and use the same hash function",
+      "Every log entry is encrypted with the same secret key"
     ],
-    "correct": 1,
-    "explanation_vi": "Certificate Transparency dùng.",
-    "explanation_en": "Certificate Transparency uses."
+    "correct": 0,
+    "explanation_vi": "Bằng chứng nhất quán cho phép kiểm tra rằng root mới được tạo bằng cách bổ sung dữ liệu vào phiên bản cũ, trong khi vẫn giữ nguyên thứ tự và nội dung các mục đã tồn tại.",
+    "explanation_en": "A consistency proof shows that a newer root was produced by appending entries while preserving the order and contents of all previous entries."
   },
   {
     "id": "q320",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Merkle Tree rebuild khi thêm tx?",
+    "question_vi": "Trong một cây Merkle cân bằng hỗ trợ cập nhật, khi giá trị của một nút lá thay đổi thì những nút nào phải được tính lại?",
     "question_en": "MT rebuild when adding tx?",
     "options_vi": [
-      "Toàn bộ",
-      "Chỉ nhánh ảnh hưởng",
-      "Ko rebuild",
-      "Tạo mới"
+      "Mọi nút trong cây, kể cả các nhánh không chứa nút lá thay đổi",
+      "Nút lá và các nút tổ tiên trên đường từ lá đó đến Merkle Root",
+      "Chỉ nút lá và nút cha trực tiếp, các tầng phía trên giữ nguyên",
+      "Chỉ Merkle Root vì các nút trung gian không phụ thuộc dữ liệu lá"
     ],
     "options_en": [
       "Entire",
@@ -7036,20 +7036,20 @@
       "Create new"
     ],
     "correct": 1,
-    "explanation_vi": "Chỉ cập nhật O(log n) nút.",
+    "explanation_vi": "Chỉ nút lá bị thay đổi và các nút tổ tiên của nó phụ thuộc vào giá trị mới. Với cây cân bằng, số nút cần tính lại thường tăng theo `O(log n)`.",
     "explanation_en": "Only update O(log n) nodes."
   },
   {
     "id": "q321",
     "topic": "merkle",
     "difficulty": "hard",
-    "question_vi": "Compact multi-proof trong Merkle Tree giúp tiết kiệm gì?",
+    "question_vi": "Compact Merkle multiproof giảm kích thước bằng chứng cho nhiều nút lá bằng cách nào?",
     "question_en": "What does a compact multi-proof in Merkle Trees help save?",
     "options_vi": [
-      "1 proof",
-      "Proof nhiều lá chia sẻ siblings",
-      "Hash all",
-      "Ko có"
+      "Gộp các proof nhưng vẫn lặp lại mọi hash xuất hiện trên đường dẫn chung",
+      "Dùng chung các hash trùng giữa nhiều đường dẫn và chỉ gửi tập cần thiết",
+      "Chỉ gửi các nút lá cần kiểm tra và bỏ toàn bộ hash trung gian của cây",
+      "Thay các hash anh em bằng chỉ số số học không ràng buộc với dữ liệu"
     ],
     "options_en": [
       "1 proof",
@@ -7058,20 +7058,20 @@
       "Does not exist"
     ],
     "correct": 1,
-    "explanation_vi": "Gộp proof → tiết kiệm hash trùng.",
+    "explanation_vi": "Khi nhiều nút lá được xác minh cùng lúc, các đường dẫn của chúng có thể dùng chung một số nút. Multiproof chỉ cung cấp tập giá trị băm tối thiểu cần thiết thay vì ghép nhiều bằng chứng độc lập có dữ liệu trùng lặp.",
     "explanation_en": "Combine proofs → save duplicate hashes."
   },
   {
     "id": "q322",
     "topic": "merkle",
     "difficulty": "hard",
-    "question_vi": "Merkle Tree được sử dụng trong Certificate Transparency như thế nào?",
+    "question_vi": "Certificate Transparency sử dụng Merkle Tree nhằm bảo đảm thuộc tính nào của nhật ký chứng thư số?",
     "question_en": "How are Merkle Trees used in Certificate Transparency?",
     "options_vi": [
-      "Ko dùng",
-      "Log append-only, proof inclusion/consistency",
-      "Mining",
-      "Wallet"
+      "Nhật ký công khai cho phép sửa mục cũ nếu vẫn giữ nguyên số lượng chứng thư",
+      "Nhật ký chỉ-thêm hỗ trợ inclusion proof và consistency proof",
+      "Nhật ký riêng tư mã hóa mọi chứng thư và chỉ công bố số lượng mục",
+      "Nhật ký không cần công bố root vì chữ ký của CA thay thế mọi bằng chứng"
     ],
     "options_en": [
       "Not used",
@@ -7080,7 +7080,7 @@
       "Wallet"
     ],
     "correct": 1,
-    "explanation_vi": "CT: public log SSL certs dùng Merkle Tree.",
+    "explanation_vi": "Merkle Tree cho phép kiểm tra một chứng thư đã xuất hiện trong nhật ký và kiểm tra phiên bản nhật ký mới có thực sự mở rộng phiên bản cũ mà không âm thầm sửa hoặc xóa mục hay không.",
     "explanation_en": "CT: public log of SSL certs using Merkle Tree."
   },
   {
@@ -8913,13 +8913,13 @@
     "id": "q406",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Thay đổi 1 tx → root?",
+    "question_vi": "Tập dữ liệu nào là tối thiểu về mặt khái niệm để tính lại Merkle Root từ một nút lá?",
     "question_en": "Change 1 tx → root?",
     "options_vi": [
-      "Ko đổi",
-      "Đổi hoàn toàn",
-      "1 bit",
-      "Tùy"
+      "Các giá trị băm anh em nhưng không cần biết thứ tự ghép",
+      "Các giá trị băm anh em cùng vị trí trái–phải trên đường dẫn đến gốc",
+      "Toàn bộ các nút lá nhưng không cần quy tắc băm",
+      "Khóa riêng của người tạo dữ liệu"
     ],
     "options_en": [
       "No change",
@@ -8928,64 +8928,64 @@
       "Depends"
     ],
     "correct": 1,
-    "explanation_vi": "Avalanche effect.",
+    "explanation_vi": "Trình xác minh lần lượt kết hợp giá trị hiện tại với các giá trị băm anh em theo đúng vị trí trái–phải để tính lại Merkle Root và so sánh với giá trị gốc đã biết.",
     "explanation_en": "Avalanche effect."
   },
   {
     "id": "q407",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Cây Merkle phát minh năm?",
-    "question_en": "Merkle Tree invented year?",
+    "question_vi": "Nhận định nào mô tả đúng nhất tính ràng buộc của Merkle Root?",
+    "question_en": "Which statement best describes the binding property of a Merkle Root?",
     "options_vi": [
-      "1977",
-      "1979",
-      "1985",
-      "2008"
+      "Root phụ thuộc vào dữ liệu và cấu trúc cây khi hàm băm đủ an toàn",
+      "Root phụ thuộc vào dữ liệu nhưng không phụ thuộc thứ tự ghép các nút",
+      "Root chỉ phản ánh số lượng nút lá mà không phản ánh nội dung",
+      "Root xác định danh tính người tạo mà không cần chữ ký số"
     ],
     "options_en": [
-      "1977",
-      "1979",
-      "1985",
-      "2008"
+      "The root depends on the data and tree structure, assuming a secure hash function",
+      "The root depends on the data but not on node order or pairing structure",
+      "The root represents only the number of leaves and not their contents",
+      "The root identifies the data creator without requiring a digital signature"
     ],
-    "correct": 1,
-    "explanation_vi": "Ralph Merkle, 1979.",
-    "explanation_en": "Ralph Merkle, 1979."
+    "correct": 0,
+    "explanation_vi": "Mỗi nút cha phụ thuộc vào các nút con, vì vậy Merkle Root gián tiếp phụ thuộc vào toàn bộ dữ liệu trong cây. Nếu dữ liệu thay đổi, root tương ứng cũng thay đổi với xác suất rất cao khi dùng hàm băm mật mã an toàn.",
+    "explanation_en": "Each parent depends on its children, so the Merkle Root indirectly depends on all tree data and its structure. Changing the data normally changes the root when a secure hash function is used."
   },
   {
     "id": "q408",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Merkle Tree Bitcoin xây khi?",
-    "question_en": "When is Bitcoin Merkle Tree built?",
+    "question_vi": "Trong quy trình tạo khối Bitcoin, cây Merkle của các giao dịch được xây dựng vào thời điểm nào?",
+    "question_en": "When is the transaction Merkle tree built during Bitcoin block creation?",
     "options_vi": [
-      "Khi đào",
-      "Khi miner tạo block candidate",
-      "Khi broadcast",
-      "Sau confirm"
+      "Khi thợ đào tập hợp giao dịch và tạo tiêu đề cho khối ứng viên",
+      "Sau khi khối đã được mạng chấp nhận và nhận đủ số xác nhận",
+      "Khi một nút đầy đủ cập nhật UTXO sau khi nhận khối qua mạng",
+      "Khi máy khách SPV yêu cầu bằng chứng cho một giao dịch cụ thể"
     ],
     "options_en": [
-      "When mining",
-      "When miner creates block candidate",
-      "When broadcast",
-      "After confirm"
+      "When a miner assembles transactions and creates the candidate block header",
+      "After the block has been accepted and received enough confirmations",
+      "When a full node updates its UTXO set after receiving the block",
+      "When an SPV client requests a proof for a particular transaction in the block"
     ],
-    "correct": 1,
-    "explanation_vi": "Miner tập hợp tx → xây Merkle Tree → mining.",
-    "explanation_en": "Miner collects txs → builds Merkle Tree → mines."
+    "correct": 0,
+    "explanation_vi": "Thợ đào tập hợp các giao dịch cho khối ứng viên, tính Merkle Root và đưa root vào tiêu đề khối. Khi tập giao dịch thay đổi, Merkle Root trong tiêu đề cũng phải được cập nhật.",
+    "explanation_en": "A miner assembles candidate transactions, calculates their Merkle Root, and places the root in the candidate block header before or while searching for valid Proof of Work."
   },
   {
     "id": "q409",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "So sánh bằng chứng bao gồm (inclusion proof) và bằng chứng không bao gồm (non-inclusion proof)",
+    "question_vi": "Bằng chứng bao gồm và bằng chứng không bao gồm khác nhau như thế nào?",
     "question_en": "Compare inclusion proof and non-inclusion proof in Merkle Trees",
     "options_vi": [
-      "Giống",
-      "Inclusion: tx có trong tree. Non-inclusion: tx ko có",
-      "Ngược",
-      "Ko liên quan"
+      "Inclusion chứng minh phần tử có mặt; non-inclusion chỉ chứng minh root tồn tại",
+      "Inclusion chứng minh phần tử có mặt; non-inclusion chứng minh phần tử vắng mặt",
+      "Inclusion chứng minh nội dung hợp lệ; non-inclusion chứng minh nội dung đã bị mã hóa",
+      "Hai loại proof giống nhau và chỉ khác thuật toán băm được lựa chọn"
     ],
     "options_en": [
       "Same",
@@ -8994,20 +8994,20 @@
       "Unrelated"
     ],
     "correct": 1,
-    "explanation_vi": "Sorted Merkle Tree hỗ trợ non-inclusion proof.",
+    "explanation_vi": "Cây Merkle thông thường hỗ trợ trực tiếp bằng chứng bao gồm. Bằng chứng không bao gồm cần một cấu trúc có quy tắc bổ sung, chẳng hạn cây Merkle sắp thứ tự hoặc Sparse Merkle Tree.",
     "explanation_en": "Sorted Merkle Tree supports non-inclusion proof."
   },
   {
     "id": "q410",
     "topic": "merkle",
     "difficulty": "hard",
-    "question_vi": "Cây Merkle có thể tính toán song song (parallelizable) không?",
+    "question_vi": "Quá trình xây dựng cây Merkle có thể được tính toán song song như thế nào?",
     "question_en": "Can Merkle Tree computations be parallelized?",
     "options_vi": [
-      "Ko",
-      "Có, mỗi tầng tính song song",
-      "Chỉ root",
-      "Tùy"
+      "Chỉ các tầng khác nhau có thể tính song song, còn các nút cùng tầng phải tuần tự",
+      "Các cặp độc lập cùng tầng có thể băm song song trước khi tính tầng trên",
+      "Chỉ phép băm tạo Merkle Root có thể chia nhỏ để thực hiện song song",
+      "Mọi tầng có thể tính đồng thời mà không cần chờ kết quả từ tầng dưới"
     ],
     "options_en": [
       "No",
@@ -9016,20 +9016,20 @@
       "Depends"
     ],
     "correct": 1,
-    "explanation_vi": "Tầng lá → tầng trên: song song trong mỗi tầng.",
+    "explanation_vi": "Các nút cha trong cùng một tầng phụ thuộc vào những cặp nút con khác nhau nên có thể được tính song song. Tuy nhiên, một tầng phía trên chỉ được tính sau khi các giá trị cần thiết ở tầng dưới đã sẵn sàng.",
     "explanation_en": "Leaf level → upper: parallel within each level."
   },
   {
     "id": "q411",
     "topic": "merkle",
     "difficulty": "hard",
-    "question_vi": "Độ phức tạp bộ nhớ (space complexity) của cây Merkle là bao nhiêu?",
+    "question_vi": "Nếu lưu đầy đủ một cây Merkle nhị phân có `N` nút lá, độ phức tạp bộ nhớ của cây là bao nhiêu?",
     "question_en": "What is the space complexity of a Merkle Tree?",
     "options_vi": [
-      "O(1)",
-      "O(n) cho n lá",
-      "O(n log n)",
-      "O(n²)"
+      "`O(1)`, vì chỉ cần lưu Merkle Root sau khi xây dựng xong cây",
+      "`O(N)`, vì cây đầy đủ có khoảng `2N - 1` nút",
+      "`O(N log N)`, vì mỗi lá xuất hiện lại ở mọi tầng phía trên",
+      "`O(N²)`, vì phải lưu một liên kết cho mọi cặp nút lá"
     ],
     "options_en": [
       "O(1)",
@@ -9038,7 +9038,7 @@
       "O(n²)"
     ],
     "correct": 1,
-    "explanation_vi": "~2n nodes cho n lá.",
+    "explanation_vi": "Cây nhị phân đầy đủ có `N` lá chứa `N - 1` nút trong, tức tổng cộng `2N - 1` nút. Vì vậy lượng bộ nhớ tăng tuyến tính theo số nút lá.",
     "explanation_en": "~2n nodes for n leaves."
   },
   {
@@ -10145,13 +10145,13 @@
     "id": "q462",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Merkle Tree trong Git?",
+    "question_vi": "Mô tả nào chính xác nhất về vai trò của các đối tượng `blob`, `tree` và `commit` trong Git?",
     "question_en": "Merkle Tree in Git?",
     "options_vi": [
-      "Ko",
-      "Hash tree theo dõi thay đổi file/folder",
-      "Mining",
-      "Encrypt"
+      "`blob` lưu nội dung; `tree` tổ chức tên và tham chiếu; `commit` tham chiếu snapshot và lịch sử, các đối tượng được định danh bằng hàm băm",
+      "`blob` và `tree` được băm, nhưng `commit` chỉ được nhận diện bằng thời gian tạo",
+      "`commit` chứa trực tiếp toàn bộ nội dung tệp nên không cần tham chiếu đến `tree`",
+      "Cả ba loại đối tượng đều là khóa mã hóa dùng để giải mã kho mã nguồn"
     ],
     "options_en": [
       "No",
@@ -10160,20 +10160,20 @@
       "Encrypt"
     ],
     "correct": 1,
-    "explanation_vi": "Git objects: blob, tree, commit → hash linked.",
+    "explanation_vi": "Git là hệ thống quản lý phiên bản phân tán. Nội dung tệp được lưu trong đối tượng `blob`, cấu trúc thư mục trong đối tượng `tree`, còn `commit` tham chiếu đến một `tree` và commit cha. Các đối tượng được định danh bằng giá trị băm, tạo nên một đồ thị có hướng liên kết theo nội dung.",
     "explanation_en": "Git objects: blob, tree, commit → hash linked."
   },
   {
     "id": "q463",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "So sánh cây Merkle và danh sách hash (hash list): cái nào hiệu quả hơn?",
+    "question_vi": "So với danh sách tuyến tính các giá trị băm, cây Merkle có lợi thế gì khi xác minh một phần tử?",
     "question_en": "Comparing Merkle Trees and hash lists: which is more efficient?",
     "options_vi": [
-      "Giống",
-      "Tree: verify O(log n). List: verify O(n)",
-      "List tốt hơn",
-      "Ko liên quan"
+      "Cả hai luôn cần cung cấp `O(n)` hash để xác minh một phần tử bất kỳ",
+      "Merkle proof cần `O(log n)` hash, còn kiểm tra danh sách có thể cần `O(n)`",
+      "Danh sách hash cần `O(log n)` phần tử, còn cây Merkle cần `O(n)`",
+      "Cây Merkle xác minh được mà không cần biết trước một root đáng tin cậy"
     ],
     "options_en": [
       "Same",
@@ -10182,20 +10182,20 @@
       "Unrelated"
     ],
     "correct": 1,
-    "explanation_vi": "Tree hiệu quả hơn cho partial verification.",
+    "explanation_vi": "Cấu trúc phân cấp cho phép chỉ cung cấp các giá trị băm cần thiết trên một đường đến root, thay vì phải duyệt hoặc cung cấp toàn bộ danh sách.",
     "explanation_en": "Tree more efficient for partial verification."
   },
   {
     "id": "q464",
     "topic": "merkle",
     "difficulty": "hard",
-    "question_vi": "Cấu trúc dữ liệu xác thực (Authenticated data structure) là gì?",
+    "question_vi": "Cấu trúc dữ liệu xác thực (authenticated data structure) là gì?",
     "question_en": "What is an authenticated data structure?",
     "options_vi": [
-      "Array",
-      "Cấu trúc dữ liệu + cryptographic digest verify integrity",
-      "Hash",
-      "List"
+      "Cấu trúc dữ liệu có checksum để phát hiện lỗi nhưng không cung cấp proof truy vấn",
+      "Cấu trúc kết hợp cam kết mật mã và proof để kiểm tra dữ liệu hoặc truy vấn",
+      "Cấu trúc dữ liệu được mã hóa để chỉ chủ sở hữu mới đọc được nội dung",
+      "Cấu trúc lưu chữ ký người dùng nhưng không ràng buộc với dữ liệu bên trong"
     ],
     "options_en": [
       "Array",
@@ -10204,7 +10204,7 @@
       "List"
     ],
     "correct": 1,
-    "explanation_vi": "Merkle Tree là authenticated data structure.",
+    "explanation_vi": "Cấu trúc dữ liệu xác thực tạo ra một giá trị cam kết ngắn, chẳng hạn Merkle Root, và các bằng chứng cho phép bên kiểm tra xác minh dữ liệu hoặc kết quả truy vấn mà không cần tin hoàn toàn vào nơi lưu trữ.",
     "explanation_en": "Merkle Tree is an authenticated data structure."
   },
   {
@@ -10783,13 +10783,13 @@
     "id": "q491",
     "topic": "merkle",
     "difficulty": "easy",
-    "question_vi": "Merkle proof = ?",
+    "question_vi": "Một bằng chứng bao gồm Merkle hợp lệ trực tiếp chứng minh điều gì?",
     "question_en": "Merkle proof = ?",
     "options_vi": [
-      "Toàn cây",
-      "Tập sibling hashes chứng minh 1 lá thuộc cây",
-      "Root",
-      "Block"
+      "Phần tử hợp lệ theo mọi quy tắc nghiệp vụ của hệ thống",
+      "Phần tử thuộc tập dữ liệu được cam kết bởi Merkle Root đã biết",
+      "Phần tử từng xuất hiện trong bất kỳ cây Merkle nào trước đó",
+      "Người cung cấp bằng chứng sở hữu khóa riêng của hệ thống"
     ],
     "options_en": [
       "Whole tree",
@@ -10798,20 +10798,20 @@
       "Block"
     ],
     "correct": 1,
-    "explanation_vi": "Proof of inclusion.",
+    "explanation_vi": "Bằng chứng cho phép tính lại root từ phần tử cần kiểm tra. Nếu kết quả trùng với Merkle Root đáng tin cậy, phần tử được chứng minh là thuộc tập dữ liệu mà root đó đại diện.",
     "explanation_en": "Proof of inclusion."
   },
   {
     "id": "q492",
     "topic": "merkle",
     "difficulty": "medium",
-    "question_vi": "Tại sao Bitcoin dùng Merkle Tree?",
+    "question_vi": "Vì sao Bitcoin đưa Merkle Root của các giao dịch vào tiêu đề khối?",
     "question_en": "Why does Bitcoin use Merkle Tree?",
     "options_vi": [
-      "Mã hoá",
-      "SPV verify nhanh + tamper detection",
-      "Nhanh hơn",
-      "Lưu file"
+      "Để cam kết với giao dịch nhưng vẫn cần đưa mọi giao dịch vào tiêu đề khối",
+      "Để cam kết với tập giao dịch và hỗ trợ xác minh bằng Merkle proof",
+      "Để thay chữ ký số của từng giao dịch bằng một chữ ký chung của khối",
+      "Để mã hóa danh sách giao dịch trước khi truyền khối qua mạng P2P"
     ],
     "options_en": [
       "Encrypt",
@@ -10820,7 +10820,7 @@
       "Store files"
     ],
     "correct": 1,
-    "explanation_vi": "Efficient verification + integrity.",
+    "explanation_vi": "Merkle Root ràng buộc tiêu đề khối với các giao dịch bên trong khối. Bằng chứng Merkle cho phép xác minh một giao dịch dựa trên root mà không cần cung cấp toàn bộ danh sách giao dịch.",
     "explanation_en": "Efficient verification + integrity."
   },
   {
