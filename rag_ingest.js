@@ -1,22 +1,24 @@
 'use strict';
 
 /**
- * rag_ingest.js — PDF Ingestion Script for HubBlock RAG
+ * rag_ingest.js — PDF Ingestion Script for HubBlock RAG (LangChain)
  *
- * Run ONCE to process all 14 PDFs and create rag_index.json
+ * Run ONCE to process all PDFs and create rag_index.json
  * Usage: node rag_ingest.js
  *
  * What it does:
- *  1. Reads all PDFs from ./Documents/
- *  2. Extracts text using pdf-parse
- *  3. Splits into chunks (~500 chars, 80 chars overlap) manually
- *  4. Embeds each chunk via OpenAI text-embedding-3-small
- *  5. Saves rag_index.json with all chunks + embeddings + metadata
+ *  1. Reads all PDFs from ./Documents/ with LangChain PDFLoader (one Document per page)
+ *  2. Splits pages into chunks with RecursiveCharacterTextSplitter
+ *  3. Embeds each chunk via GoogleGenerativeAIEmbeddings / OpenAIEmbeddings
+ *     (skipped when no API key — the server then uses BM25 keyword search only)
+ *  4. Saves rag_index.json with all chunks + embeddings + metadata
+ *     (chunks whose source is not a PDF in ./Documents/, e.g. team info, are kept)
  */
 
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
+const { PDFLoader } = require('@langchain/community/document_loaders/fs/pdf');
+const { RecursiveCharacterTextSplitter } = require('@langchain/textsplitters');
 const { getDocTitle } = require('./rag_titles');
 
 // ─── Config ───────────────────────────────────────────────────────
@@ -25,8 +27,6 @@ const OUTPUT_PATH = path.join(__dirname, 'rag_index.json');
 const CHUNK_SIZE = 1200;    // characters per chunk (~300 tokens)
 const CHUNK_OVERLAP = 150;  // overlap characters
 const BATCH_SIZE = 5;       // embed N chunks at once (rate limit friendly)
-const EMBED_MODEL_OPENAI = 'text-embedding-3-small';
-const EMBED_MODEL_GEMINI = 'gemini-embedding-001';
 
 // ─── Load .env manually ───────────────────────────────────────────
 try {
@@ -45,210 +45,71 @@ try {
   }
 } catch (e) { /* ignore */ }
 
-const GEMINI_KEY = (process.env.GEMINI_API_KEY || '').trim();
-const OPENAI_KEY = (process.env.OPENAI_API_KEY || '').trim();
-const USE_GEMINI = !!GEMINI_KEY;
-const API_KEY = GEMINI_KEY || OPENAI_KEY;
+// Required after .env is loaded so the embedding keys are visible
+const { getEmbeddings } = require('./rag_engine');
+const USE_GEMINI = !!(process.env.GEMINI_API_KEY || '').trim();
 
-// ─── Text splitter (manual, no langchain needed) ──────────────────
-function splitTextIntoChunks(text, chunkSize, overlap) {
-  const chunks = [];
-  let start = 0;
-
-  // Clean up whitespace
-  const cleaned = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-
-  while (start < cleaned.length) {
-    let end = start + chunkSize;
-
-    // Try to break at paragraph or sentence boundary
-    if (end < cleaned.length) {
-      const breakAt = cleaned.lastIndexOf('\n\n', end);
-      const sentBreak = cleaned.lastIndexOf('. ', end);
-      const best = Math.max(breakAt, sentBreak);
-      if (best > start + chunkSize * 0.5) {
-        end = best + 1;
-      }
-    }
-
-    const chunk = cleaned.slice(start, end).trim();
-    if (chunk.length > 50) { // skip tiny chunks
-      chunks.push(chunk);
-    }
-
-    start = end - overlap;
-    if (start >= cleaned.length) break;
-  }
-
-  return chunks;
-}
-
-// ─── Estimate page number from character offset ───────────────────
-function estimatePage(charOffset, totalChars, totalPages) {
-  if (!totalPages || totalPages <= 1) return 1;
-  return Math.max(1, Math.ceil((charOffset / totalChars) * totalPages));
-}
-
-// ─── Embed batch via OpenAI ─────────────────────────────────
-function embedBatchOpenAI(texts) {
-  return new Promise((resolve, reject) => {
-    const payload = JSON.stringify({
-      model: EMBED_MODEL_OPENAI,
-      input: texts.map(t => t.slice(0, 8000)),
-    });
-
-    let data = '';
-    const req = https.request({
-      hostname: 'api.openai.com',
-      port: 443,
-      path: '/v1/embeddings',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_KEY}`,
-        'Content-Length': Buffer.byteLength(payload),
-      },
-    }, (res) => {
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.error) return reject(new Error(parsed.error.message));
-          const embeddings = parsed.data
-            .sort((a, b) => a.index - b.index)
-            .map(d => d.embedding);
-          resolve(embeddings);
-        } catch (e) {
-          reject(new Error('Parse error: ' + data.slice(0, 200)));
-        }
-      });
-    });
-    req.setTimeout(60000, () => { req.destroy(); reject(new Error('Timeout')); });
-    req.on('error', reject);
-    req.write(payload);
-    req.end();
-  });
-}
-
-// ─── Embed batch via Google Gemini (batchEmbedContents) ───────
-function embedBatchGemini(texts) {
-  return new Promise((resolve, reject) => {
-    const payload = JSON.stringify({
-      requests: texts.map(t => ({
-        model: `models/${EMBED_MODEL_GEMINI}`,
-        content: { parts: [{ text: t.slice(0, 8000) }] },
-      })),
-    });
-
-    let data = '';
-    const req = https.request({
-      hostname: 'generativelanguage.googleapis.com',
-      port: 443,
-      path: `/v1beta/models/${EMBED_MODEL_GEMINI}:batchEmbedContents?key=${GEMINI_KEY}`,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
-      },
-    }, (res) => {
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.error) return reject(new Error(parsed.error.message || JSON.stringify(parsed.error)));
-          if (parsed.embeddings) {
-            resolve(parsed.embeddings.map(e => e.values));
-          } else {
-            reject(new Error('No embeddings in Gemini response'));
-          }
-        } catch (e) {
-          reject(new Error('Gemini parse error: ' + data.slice(0, 200)));
-        }
-      });
-    });
-    req.setTimeout(60000, () => { req.destroy(); reject(new Error('Timeout')); });
-    req.on('error', reject);
-    req.write(payload);
-    req.end();
-  });
-}
-
-// ─── Unified batch embed ───────────────────────────────────
-function embedBatch(texts) {
-  return USE_GEMINI ? embedBatchGemini(texts) : embedBatchOpenAI(texts);
-}
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: CHUNK_SIZE,
+  chunkOverlap: CHUNK_OVERLAP,
+  separators: ['\n\n', '\n', '. ', ' ', ''],
+});
 
 // ─── Sleep helper ─────────────────────────────────────────────────
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // ─── Process one PDF ──────────────────────────────────────────────
 async function processPDF(filename) {
-  const filePath = path.join(DOCS_DIR, filename);
   console.log(`\n📄 Processing: ${filename}`);
 
-  let pdfParseLib;
+  let pages;
   try {
-    pdfParseLib = require('pdf-parse');
-    if (typeof pdfParseLib !== 'function') {
-      pdfParseLib = pdfParseLib.default || Object.values(pdfParseLib).find(v => typeof v === 'function');
-    }
-    if (typeof pdfParseLib !== 'function') throw new Error('pdf-parse: no callable export found');
-  } catch (e) {
-    throw new Error('pdf-parse not installed. Run: npm install pdf-parse@1.1.1 — ' + e.message);
-  }
-
-  const buffer = fs.readFileSync(filePath);
-  let pdfData;
-  try {
-    pdfData = await pdfParseLib(buffer);
+    pages = await new PDFLoader(path.join(DOCS_DIR, filename), { splitPages: true }).load();
   } catch (e) {
     console.warn(`  ⚠️  Could not parse ${filename}: ${e.message}`);
     return [];
   }
 
-  const rawText = pdfData.text || '';
-  const totalPages = pdfData.numpages || 1;
-  const metaTitle = pdfData.info?.Title || '';
+  const totalChars = pages.reduce((n, p) => n + p.pageContent.length, 0);
+  const metaTitle = pages[0]?.metadata?.pdf?.info?.Title || '';
   const docTitle = getDocTitle(filename, metaTitle);
 
   console.log(`  📚 Title: ${docTitle}`);
-  console.log(`  📖 Pages: ${totalPages}, Text length: ${rawText.length} chars`);
+  console.log(`  📖 Pages: ${pages.length}, Text length: ${totalChars} chars`);
 
-  if (rawText.length < 100) {
+  if (totalChars < 100) {
     console.warn(`  ⚠️  Very little text extracted (possibly scanned PDF). Skipping.`);
     return [];
   }
 
-  const textChunks = splitTextIntoChunks(rawText, CHUNK_SIZE, CHUNK_OVERLAP);
-  console.log(`  ✂️  Split into ${textChunks.length} chunks`);
+  for (const p of pages) {
+    p.pageContent = p.pageContent.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
 
-  // Build chunk objects with metadata
-  const chunkObjects = textChunks.map((text, i) => {
-    const charOffset = rawText.indexOf(text.slice(0, 50));
-    const page = estimatePage(charOffset >= 0 ? charOffset : i * CHUNK_SIZE, rawText.length, totalPages);
-    return {
-      chunk_id: `${filename}::${i}`,
-      filename,
-      title: docTitle,
-      page,
-      text,
-      embedding: null, // will be filled
-    };
-  });
+  const chunks = (await splitter.splitDocuments(pages)).filter(c => c.pageContent.length > 50);
+  console.log(`  ✂️  Split into ${chunks.length} chunks`);
 
-  return chunkObjects;
+  return chunks.map((chunk, i) => ({
+    chunk_id: `${filename}::${i}`,
+    filename,
+    title: docTitle,
+    page: chunk.metadata.loc?.pageNumber || 1,
+    text: chunk.pageContent,
+    embedding: null, // will be filled
+  }));
 }
 
 // ─── Main ingestion ───────────────────────────────────────────────
 async function main() {
-  console.log('🚀 HubBlock — RAG Ingestion Script');
+  console.log('🚀 HubBlock — RAG Ingestion Script (LangChain)');
   console.log('='.repeat(50));
 
-  if (!API_KEY) {
-    console.error('❌ No API key found! Add GEMINI_API_KEY or OPENAI_API_KEY to .env');
-    process.exit(1);
+  const embeddings = getEmbeddings();
+  if (embeddings) {
+    console.log(`🔑 Using: ${USE_GEMINI ? 'GoogleGenerativeAIEmbeddings (gemini-embedding-001)' : 'OpenAIEmbeddings (text-embedding-3-small)'}`);
+  } else {
+    console.warn('⚠️  No GEMINI_API_KEY or OPENAI_API_KEY — chunks will be saved without embeddings (BM25 search only).');
   }
-  console.log(`🔑 Using: ${USE_GEMINI ? 'Google Gemini (text-embedding-004)' : 'OpenAI (text-embedding-3-small)'}`);
 
   // Get PDF list
   const files = fs.readdirSync(DOCS_DIR).filter(f => f.toLowerCase().endsWith('.pdf'));
@@ -257,6 +118,17 @@ async function main() {
   if (files.length === 0) {
     console.error('❌ No PDF files found in ./Documents/');
     process.exit(1);
+  }
+
+  // Keep hand-written chunks (e.g. project/team info) that have no PDF in ./Documents/
+  let preserved = [];
+  if (fs.existsSync(OUTPUT_PATH)) {
+    try {
+      preserved = JSON.parse(fs.readFileSync(OUTPUT_PATH, 'utf8')).filter(c => !files.includes(c.filename));
+      if (preserved.length) console.log(`📌 Keeping ${preserved.length} existing non-PDF chunks`);
+    } catch (e) {
+      console.warn('⚠️  Could not read existing rag_index.json:', e.message);
+    }
   }
 
   // Extract text from all PDFs
@@ -270,52 +142,50 @@ async function main() {
     }
   }
 
-  console.log(`\n\n📊 Total chunks to embed: ${allChunks.length}`);
-  console.log(`💰 Estimated cost: ~$${(allChunks.length * CHUNK_SIZE * 0.00000002).toFixed(4)} USD`);
-  const embLabel = USE_GEMINI ? 'Gemini text-embedding-004' : 'OpenAI text-embedding-3-small';
-  console.log(`\n🔗 Starting embedding via ${embLabel}...\n`);
+  console.log(`\n\n📊 Total chunks: ${allChunks.length}`);
 
-  // Embed in batches
-  let embedded = 0;
-  for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
-    const batch = allChunks.slice(i, i + BATCH_SIZE);
-    const texts = batch.map(c => c.text);
+  let validChunks = allChunks;
+  if (embeddings) {
+    console.log(`\n🔗 Starting embedding...\n`);
 
-    try {
-      const embeddings = await embedBatch(texts);
-      for (let j = 0; j < batch.length; j++) {
-        allChunks[i + j].embedding = embeddings[j];
+    // Preserved chunks are kept either way; embed them too so vector search can find them
+    const toEmbed = preserved.filter(c => !c.embedding).concat(allChunks);
+
+    // Embed in batches
+    let embedded = 0;
+    for (let i = 0; i < toEmbed.length; i += BATCH_SIZE) {
+      const batch = toEmbed.slice(i, i + BATCH_SIZE);
+      const texts = batch.map(c => c.text.slice(0, 8000));
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const vectors = await embeddings.embedDocuments(texts);
+          batch.forEach((c, j) => { c.embedding = vectors[j]; });
+          embedded += batch.length;
+          break;
+        } catch (e) {
+          console.error(`\n  ❌ Embedding batch ${i}-${i + BATCH_SIZE} failed:`, e.message);
+          if (attempt === 0) await sleep(2000);
+          else console.error(`  ❌ Retry failed. Skipping batch.`);
+        }
       }
-      embedded += batch.length;
-      const pct = Math.round((embedded / allChunks.length) * 100);
-      process.stdout.write(`\r  ⚡ Progress: ${embedded}/${allChunks.length} chunks (${pct}%)`);
+
+      const pct = Math.round((embedded / toEmbed.length) * 100);
+      process.stdout.write(`\r  ⚡ Progress: ${embedded}/${toEmbed.length} chunks (${pct}%)`);
 
       // Rate limit: Gemini free = 15 RPM, so ~4s between requests
-      if (i + BATCH_SIZE < allChunks.length) {
+      if (i + BATCH_SIZE < toEmbed.length) {
         await sleep(USE_GEMINI ? 5000 : 500);
       }
-    } catch (e) {
-      console.error(`\n  ❌ Embedding batch ${i}-${i + BATCH_SIZE} failed:`, e.message);
-      // Retry once
-      await sleep(2000);
-      try {
-        const embeddings = await embedBatch(texts);
-        for (let j = 0; j < batch.length; j++) {
-          allChunks[i + j].embedding = embeddings[j];
-        }
-        embedded += batch.length;
-      } catch (e2) {
-        console.error(`  ❌ Retry failed. Skipping batch.`);
-      }
     }
+
+    // Filter out chunks without embeddings
+    validChunks = allChunks.filter(c => c.embedding !== null);
+    console.log(`\n\n✅ Successfully embedded: ${validChunks.length}/${allChunks.length} chunks`);
   }
 
-  // Filter out chunks without embeddings
-  const validChunks = allChunks.filter(c => c.embedding !== null);
-  console.log(`\n\n✅ Successfully embedded: ${validChunks.length}/${allChunks.length} chunks`);
-
   // Save to disk
-  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(validChunks), 'utf8');
+  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(preserved.concat(validChunks)), 'utf8');
 
   const fileSizeMB = (fs.statSync(OUTPUT_PATH).size / 1024 / 1024).toFixed(2);
   console.log(`\n💾 Saved to: rag_index.json (${fileSizeMB} MB)`);
