@@ -278,7 +278,8 @@ flowchart TD
 | **AI & RAG** | Inference API | Groq Cloud SDK / REST API | Ultra-low latency LLM inference |
 | | LLM Models | `openai/gpt-oss-120b`, `llama-3.3-70b`, `llama-3.1-8b` | Generative question answering |
 | | Secondary LLMs | Google Gemini 1.5 Flash / OpenAI GPT-4o-mini | Failover model orchestration |
-| | RAG Index | BM25 Lexical + Cosine Similarity Vector Store | Grounded domain knowledge retrieval |
+| | Orchestration | LangChain.js (`@langchain/core`, `community`, `openai`, `google-genai`, `textsplitters`) | PDFLoader, RecursiveCharacterTextSplitter, PromptTemplate, ChatOpenAI `.withFallbacks()` |
+| | RAG Index | LangChain BM25Retriever + VectorStoreRetriever (cosine similarity) | Grounded domain knowledge retrieval |
 | **Java Core** | Reference Core | Java 17 (`java.security.*`) | Reference academic implementation |
 
 ---
@@ -289,8 +290,9 @@ flowchart TD
 blockchain_visualization_tool/
 ├── server.js                     # Primary Node.js HTTP server, API routes, static serving
 ├── db.js                         # MongoDB Atlas database connection initialization
-├── rag_engine.js                 # In-memory retrieval engine (BM25 + vector similarity)
-├── rag_ingest.js                 # Corpus ingestion and chunk indexing pipeline
+├── rag_engine.js                 # LangChain retrievers (VectorStoreRetriever with BM25Retriever fallback)
+├── llm_chain.js                  # LangChain PromptTemplates + ChatOpenAI fallback chain (Groq/Gemini/OpenAI)
+├── rag_ingest.js                 # LangChain ingestion: PDFLoader → text splitter → embeddings
 ├── rag_index.json                # Pre-built knowledge base index (4,572 chunks)
 ├── seed_admin.js                 # Default administrative account seeder
 ├── vite.config.js                # Vite client configuration and reverse-proxy rules

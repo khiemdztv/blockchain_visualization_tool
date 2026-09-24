@@ -56,6 +56,7 @@ const { getUserFromReq } = require('./middleware/auth');
 // RAG ENGINE — load on startup
 // ═══════════════════════════════════════════════════════════════
 const ragEngine = require('./rag_engine');
+const { buildSystemPrompt, invokeChat } = require('./llm_chain');
 ragEngine.init().then(() => {
   console.log('[HubBlock] RAG engine initialized.');
 }).catch(e => {
@@ -720,49 +721,14 @@ When users ask about the faculty supervisor (Dr. Nguyen Hoai Duc), development t
       // Generate the list of all available books
       const allBooks = Object.values(require('./rag_titles').DOC_TITLES).join('\n- ');
 
-      // ── Build system prompt with RAG context ───────────────────
-      let systemPrompt;
-      if (ragContext) {
-        systemPrompt = isVi
-          ? `Bạn là AI Assistant của HubBlock — ứng dụng giáo dục Blockchain.
-Trang hiện tại: "${currentPage}"
-Bạn đã được huấn luyện sẵn trên 14 bộ tài liệu sau: 
-- ${allBooks}
-
-Dựa trên truy vấn hiện tại, hệ thống đã trích xuất các đoạn văn bản (TÀI LIỆU) liên quan nhất như sau:
-
-${ragContext}
-
-QUY TẮC QUAN TRỌNG:
-1. Trả lời Tiếng Việt, thân thiện, rõ ràng và có chiều sâu học thuật.
-2. LUÔN trích dẫn nguồn ngay dước đoạn văn dựa theo đúng format ở phần TÀI LIỆU (KHÔNG DÙNG "Nguồn 1", "Nguồn 2", mà phải dùng trực tiếp Tên sách). Ví dụ: [Tên Sách, tr. X]
-3. TUYỆT ĐỐI KHÔNG dùng định dạng toán học LaTeX (như \\(, \\), \\[, \\]). Dùng text bình thường và các ký hiệu thông dụng (ví dụ: c = m^e mod n).
-4. Nếu thông tin không có trong tài liệu trên, hãy nói rõ: "Theo kiến thức chung..."
-5. Ưu tiên thông tin từ tài liệu hơn kiến thức nền.${systemInstruction}${webKnowledge}${adminDataContext}`
-          : `You are HubBlock's AI Assistant — a blockchain education web app.
-Current page: "${currentPage}"
-You have been trained on the following 14 documents:
-- ${allBooks}
-
-Based on the current query, the system has extracted the following most relevant DOCUMENTS:
-
-${ragContext}
-
-IMPORTANT RULES:
-1. Reply in English, friendly and academically precise.
-2. ALWAYS cite sources in your answer using the exact format provided in DOCUMENTS (DO NOT use "Source 1", "Source 2", but use the Book Title directly). Example: [Book Title, p. X]
-3. DO NOT use LaTeX math formatting like \\( \\) or \\[ \\]. Use plain text and standard symbols (e.g. c = m^e mod n).
-4. If information is not in the documents above, clearly state: "Based on general knowledge..."
-5. Prioritize document information over general knowledge.${systemInstruction}${webKnowledge}${adminDataContext}`;
-      } else {
-        systemPrompt = isVi
-          ? `Bạn là AI Assistant của HubBlock — ứng dụng web giáo dục Blockchain cho sinh viên.
-Trang hiện tại: "${currentPage}"
-Trả lời Tiếng Việt, thân thiện, ngắn gọn. Tập trung vào blockchain, mật mã học, hướng dẫn app.${systemInstruction}${webKnowledge}${adminDataContext}`
-          : `You are HubBlock's AI Assistant — a blockchain education web app.
-Current page: "${currentPage}"
-Reply in English, friendly and concise. Focus on blockchain, cryptography, app guidance.${systemInstruction}${webKnowledge}${adminDataContext}`;
-      }
+      // ── Build system prompt with RAG context (LangChain PromptTemplate) ──
+      const systemPrompt = await buildSystemPrompt({
+        isVi,
+        currentPage,
+        ragContext,
+        allBooks,
+        extra: `${systemInstruction}${webKnowledge}${adminDataContext}`,
+      });
 
       const history = Array.isArray(context.history) ? context.history : [];
       const oaiMessages = [
@@ -791,8 +757,6 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
         providersToTry.push({
           name: 'groq',
           apiKey: groqKey,
-          hostname: 'api.groq.com',
-          path: '/openai/v1/chat/completions',
           models: groqList,
         });
       }
@@ -800,8 +764,6 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
         providersToTry.push({
           name: 'gemini',
           apiKey: geminiKey,
-          hostname: 'generativelanguage.googleapis.com',
-          path: '/v1beta/openai/chat/completions',
           models: ['gemini-2.0-flash', 'gemini-1.5-flash'],
         });
       }
@@ -809,32 +771,20 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
         providersToTry.push({
           name: 'openai',
           apiKey: openaiKey,
-          hostname: 'api.openai.com',
-          path: '/v1/chat/completions',
           models: ['gpt-4o-mini', 'gpt-4o'],
         });
       }
 
-      // Try providers and models in order, fallback on ANY error
+      // Try providers and models in order (ChatOpenAI.withFallbacks), fallback on ANY error
       let reply = '';
       let usedModel = '';
       let lastErr = null;
-
-      providerLoop:
-      for (const prov of providersToTry) {
-        for (const modelName of prov.models) {
-          try {
-            console.log(`[Chat] Trying provider: ${prov.name}, model: ${modelName}...`);
-            const result = await callModel(prov, modelName);
-            reply = result.content;
-            usedModel = result.model;
-            break providerLoop;
-          } catch (err) {
-            lastErr = err;
-            console.warn(`[Chat] ${prov.name}/${modelName} failed (${err.statusCode || 'err'}: ${err.message}), trying next model...`);
-            continue;
-          }
-        }
+      try {
+        const result = await invokeChat(providersToTry, oaiMessages);
+        reply = result.content;
+        usedModel = result.model;
+      } catch (err) {
+        lastErr = err;
       }
 
       if (!reply) {
@@ -850,48 +800,6 @@ Reply in English, friendly and concise. Focus on blockchain, cryptography, app g
 
       console.log(`[Chat] Used model: ${usedModel}`);
       json(res, { reply, sources, model: usedModel });
-
-      // Helper: call one model
-      function callModel(prov, modelName) {
-        return new Promise((resolve, reject) => {
-          const https = require('https');
-          const payload = JSON.stringify({
-            model: modelName,
-            messages: oaiMessages,
-            max_tokens: 800,
-            temperature: 0.5,
-          });
-          let data = '';
-          const req2 = https.request({
-            hostname: prov.hostname, port: 443,
-            path: prov.path, method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${prov.apiKey}`,
-              'Content-Length': Buffer.byteLength(payload),
-            },
-          }, (r) => {
-            r.on('data', c => data += c);
-            r.on('end', () => {
-              try {
-                const p = JSON.parse(data);
-                if (p.error) {
-                  const err = new Error(p.error.message || 'AI API error');
-                  err.statusCode = r.statusCode;
-                  reject(err);
-                } else {
-                  resolve({ content: (p.choices?.[0]?.message?.content || '').trim(), model: modelName });
-                }
-              } catch(e) { reject(new Error('Parse error: ' + data.slice(0,100))); }
-            });
-          });
-          req2.setTimeout(25000, () => { req2.destroy(); reject(new Error('AI request timeout')); });
-          req2.on('error', reject);
-          req2.write(payload);
-          req2.end();
-        });
-      }
-
 
 
     // ── GET /health ───────────────────────────────────────────
